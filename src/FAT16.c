@@ -33,7 +33,7 @@ void showInfoFAT16(int fileDescriptor) {
 
     lseek(fd, 43, SEEK_SET);
     read(fd, &fat16.volumeName, 12);
-    fat32.label[11] = 0;
+    fat16.volumeName[11] = 0;
 
     printInfoFat16(fat16);
 }

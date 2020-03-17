@@ -57,18 +57,15 @@ int isEXT2(int file) {
     // Check feature_compat field and check if it's set to 1 or 0
     lseek(fd, 1116, SEEK_SET);
     read(fd, &compat, sizeof(uint32_t));
-    journal = feature_compat & 0x4;
+    journal = compat & 0x4;
     // Check feature_incompat field and check if it's set to 1 or 0
     lseek(fd, 1120, SEEK_CUR);
     read(fd, &incompat, sizeof(uint32_t));
-    extent = feature_incompat & 0x40;
+    extent = incompat & 0x40;
 
     if (!journal && !extent) {
         return 1;
-    } else {
-        printf("File system not recognized! \n");
-        exit(1);
-    }
+    } 
 
     return 0;
 }

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "./include/Utils.h"
 
-int main() {
+int main(int argc, char* argv[]) {
     if (!argc) {
         printf("Parameters are needed to run the program. Try again! \n");
     } else {
