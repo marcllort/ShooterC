@@ -12,8 +12,10 @@ void infoFileSystem(char *filename) {
     }
     if (isEXT2(fd)) {
         showInfoEXT2();
-    } else {
-        showInfoFAT16(fd);
+    } else if (isFAT16(fd)){
+        showInfoFAT16();
+    } else{
+        printf("Filesystem not recognized! \n");
     }
     close(fd);
 }

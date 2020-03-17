@@ -46,13 +46,13 @@ struct tm *getTime(uint32_t time) {
     return timeInfo;
 }
 
-int isEXT2(int file) {
+int isEXT2(int fileDescriptor) {
     uint32_t compat;
     uint32_t incompat;
     int extent, journal;
 
     // Saving the file to our global fd
-    fd = file;
+    fd = fileDescriptor;
 
     // Check feature_compat field and check if it's set to 1 or 0
     lseek(fd, 1116, SEEK_SET);

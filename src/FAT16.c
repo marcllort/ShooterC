@@ -17,9 +17,21 @@ void printInfoFat16(FAT16Volume fat16) {
     printf(LABEL, fat16.volumeName);
 }
 
-void showInfoFAT16(int fileDescriptor) {
-
+int isFAT16(int fileDescriptor) {
     fd = fileDescriptor;
+    char aux[8];
+    lseek(fd, 54, SEEK_SET);
+    read(fd, &aux, 8);
+
+    if (memcmp(aux, "FAT16", sizeof(char) * 5) == 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void showInfoFAT16() {
+
     FAT16Volume fat16;
 
     lseek(fd, 3, SEEK_SET);

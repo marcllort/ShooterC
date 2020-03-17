@@ -47,8 +47,11 @@ int fd;
 #define LAST_WRITTEN "Last written: %s"
 
 void printInfoExt2(Ext2Volume ext2);
-struct tm* getTime(uint32_t time);
-int isEXT2(int file);
+
+struct tm *getTime(uint32_t time);
+
+int isEXT2(int fileDescriptor);
+
 void showInfoEXT2();
 
 #endif //SHOOTERC_EXT2_H

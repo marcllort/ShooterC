@@ -33,6 +33,8 @@ int fd;
 
 void printInfoFat16(FAT16Volume fat16);
 
-void showInfoFAT16(int fileDescriptor);
+int isFAT16(int fileDescriptor);
+
+void showInfoFAT16();
 
 #endif //SHOOTERC_FAT16_H
