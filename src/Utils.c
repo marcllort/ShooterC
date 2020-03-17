@@ -13,7 +13,7 @@ void infoFileSystem(char *filename) {
     if (isEXT2(fd)) {
         showInfoEXT2();
     } else {
-        //showInfoFAT12(fd);
+        showInfoFAT16(fd);
     }
     close(fd);
 }

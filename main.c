@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "/include/Utils.h"
+#include "./include/Utils.h"
 
 int main() {
     if (!argc) {

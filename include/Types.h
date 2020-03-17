@@ -32,4 +32,16 @@ typedef struct {
 
 } Ext2Volume;
 
+typedef struct {
+    char systemName[8];
+    uint16_t sectorSize;
+    uint8_t sectorCluster;
+    uint16_t reservedSectors;
+    uint8_t numberFats;
+    uint16_t rootEntries;
+    uint32_t sectorsFat;
+    char volumeName[12];
+} FAT16Volume;
+
+
 #endif //SHOOTERC_TYPES_H
