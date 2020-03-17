@@ -17,4 +17,3 @@ Shooter: main.o Utils.o EXT2.o FAT16.o
 
 clean:
 	rm *.o Shooter
-

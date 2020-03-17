@@ -41,6 +41,7 @@ typedef struct {
     uint16_t rootEntries;
     uint32_t sectorsFat;
     char volumeName[12];
+
 } FAT16Volume;
 
 
