@@ -11,4 +11,6 @@
 
 void infoFileSystem(char *filename);
 
+void findInFileSystem(char *filesystem, char *filename);
+
 #endif //SHOOTERC_UTILS_H

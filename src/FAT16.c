@@ -3,19 +3,7 @@
 //
 #include "../include/FAT16.h"
 
-void printInfoFat16(FAT16Volume fat16) {
-    printf("------ Filesystem Information ------ \n\n");
-    printf("FileSystem: FAT16\n\n");
-
-    printf(SYSTEM_NAME, fat16.systemName);
-    printf(SECTOR_SIZE, fat16.sectorSize);
-    printf(SECTOR_CLUSTER, (fat16.sectorCluster));
-    printf(RESERVED_SECTORS, (fat16.reservedSectors));
-    printf(NUMBER_FATS, (fat16.numberFats));
-    printf(ROOT_ENTRIES, (fat16.rootEntries));
-    printf(SECTORS_FAT, (fat16.sectorsFat));
-    printf(LABEL, fat16.volumeName);
-}
+// GENERAL
 
 int isFAT16(int fileDescriptor) {
     fd = fileDescriptor;
@@ -30,8 +18,23 @@ int isFAT16(int fileDescriptor) {
     return 0;
 }
 
-void showInfoFAT16() {
+// FASE 1
 
+void printInfoFat16(FAT16Volume fat16) {
+    printf("------ Filesystem Information ------ \n\n");
+    printf("FileSystem: FAT16\n\n");
+
+    printf(SYSTEM_NAME, fat16.systemName);
+    printf(SECTOR_SIZE, fat16.sectorSize);
+    printf(SECTOR_CLUSTER, (fat16.sectorCluster));
+    printf(RESERVED_SECTORS, (fat16.reservedSectors));
+    printf(NUMBER_FATS, (fat16.numberFats));
+    printf(ROOT_ENTRIES, (fat16.rootEntries));
+    printf(SECTORS_FAT, (fat16.sectorsFat));
+    printf(LABEL, fat16.volumeName);
+}
+
+void showInfoFAT16() {
     FAT16Volume fat16;
 
     lseek(fd, 3, SEEK_SET);
@@ -48,4 +51,10 @@ void showInfoFAT16() {
     fat16.volumeName[11] = 0;
 
     printInfoFat16(fat16);
+}
+
+// FASE 2
+
+void findInFAT16(char* filename){
+
 }

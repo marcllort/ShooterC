@@ -7,11 +7,19 @@ int main(int argc, char* argv[]) {
     } else {
         if (strcmp(argv[1], "/info") == 0) {
             if (argc != 3) {
-                printf("Incorrect number of parameters for the Info function! \n");
+                printf("Incorrect number of parameters for the INFO function! \n");
             } else {
                 infoFileSystem(argv[2]);
             }
-        } else {
+        }
+        else if (strcmp(argv[1], "/find" == 0){
+            if (argc != 4) {
+                printf("Incorrect number of parameters for the FIND function! \n");
+            } else {
+                findInFileSystem(argv[2], argv[3]);
+            }
+        }
+        else {
             printf("Functionality not supported yet! \n");
         }
     }

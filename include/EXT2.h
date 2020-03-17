@@ -46,12 +46,14 @@ int fd;
 #define LAST_MOUNT_VOL "Last mount: %s"
 #define LAST_WRITTEN "Last written: %s"
 
+void showInfoEXT2();
+
 void printInfoExt2(Ext2Volume ext2);
 
 struct tm *getTime(uint32_t time);
 
 int isEXT2(int fileDescriptor);
 
-void showInfoEXT2();
+void findInEXT2(char *filename);
 
 #endif //SHOOTERC_EXT2_H

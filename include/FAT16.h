@@ -31,10 +31,12 @@ int fd;
 #define LABEL "Label: %s\n"
 #define ROOT_CLUSTER "\nREMOVE!!\nRootCluster: %hhu\n\n"
 
-void printInfoFat16(FAT16Volume fat16);
-
 int isFAT16(int fileDescriptor);
 
+void printInfoFat16(FAT16Volume fat16);
+
 void showInfoFAT16();
+
+void findInFAT16(char *filename);
 
 #endif //SHOOTERC_FAT16_H

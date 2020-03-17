@@ -3,10 +3,34 @@
 //
 #include "../include/EXT2.h"
 
-/**
- * Show the information of an EXT2 volume
- * @param ext2 is the volume that contains the information
- */
+// GENERAL
+
+int isEXT2(int fileDescriptor) {
+    uint32_t compat;
+    uint32_t incompat;
+    int extent, journal;
+
+    // Saving the file to our global fd
+    fd = fileDescriptor;
+
+    // Check compat field and check if it's set to 1 or 0
+    lseek(fd, 1116, SEEK_SET);
+    read(fd, &compat, sizeof(uint32_t));
+    journal = compat & 0x4;
+    // Check incompat field and check if it's set to 1 or 0
+    lseek(fd, 1120, SEEK_CUR);
+    read(fd, &incompat, sizeof(uint32_t));
+    extent = incompat & 0x40;
+
+    if (!journal && !extent) {
+        return 1;
+    }
+
+    return 0;
+}
+
+// FASE 1
+
 void printInfoExt2(Ext2Volume ext2) {
 
     printf("------ Filesystem Information ------\n\n");
@@ -45,31 +69,6 @@ struct tm *getTime(uint32_t time) {
 
     return timeInfo;
 }
-
-int isEXT2(int fileDescriptor) {
-    uint32_t compat;
-    uint32_t incompat;
-    int extent, journal;
-
-    // Saving the file to our global fd
-    fd = fileDescriptor;
-
-    // Check feature_compat field and check if it's set to 1 or 0
-    lseek(fd, 1116, SEEK_SET);
-    read(fd, &compat, sizeof(uint32_t));
-    journal = compat & 0x4;
-    // Check feature_incompat field and check if it's set to 1 or 0
-    lseek(fd, 1120, SEEK_CUR);
-    read(fd, &incompat, sizeof(uint32_t));
-    extent = incompat & 0x40;
-
-    if (!journal && !extent) {
-        return 1;
-    } 
-
-    return 0;
-}
-
 
 void showInfoEXT2() {
     Ext2Volume ext2;
@@ -124,4 +123,10 @@ void showInfoEXT2() {
 
 
     printInfoExt2(ext2);
+}
+
+// FASE 2
+
+void findInEXT2(char* filename){
+
 }
