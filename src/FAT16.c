@@ -13,6 +13,10 @@ int isFAT16(int fileDescriptor) {
 
     if (memcmp(aux, "FAT16", sizeof(char) * 5) == 0) {
         return 1;
+    } else if (memcmp(aux, "FAT32", sizeof(char) * 5) == 0){
+        return -1;
+    } else if (memcmp(aux, "FAT12", sizeof(char) * 5) == 0){
+        return -1;
     }
 
     return 0;
