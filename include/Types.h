@@ -29,8 +29,20 @@ typedef struct {
     uint32_t lastCheck;
     uint32_t lastMounted;
     uint32_t lastWritten;
-
 } Ext2Volume;
+
+typedef struct {
+    uint32_t inode;
+    uint16_t recordLength;
+    unsigned char nameLength;
+    unsigned char fileType;
+    char fileName[255];
+} Ext2Directory;
+
+typedef struct {
+    unsigned long i_size;
+    unsigned long i_block[15];
+} InodeEntry;
 
 typedef struct {
     char systemName[8];
@@ -41,7 +53,6 @@ typedef struct {
     uint16_t rootEntries;
     uint32_t sectorsFat;
     char volumeName[12];
-
 } FAT16Volume;
 
 typedef struct {

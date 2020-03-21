@@ -72,12 +72,12 @@ FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition) {
     return fatDir;
 }
 
-int findFileFAT16(char *filename) {
+int findFileFAT16(char *fileName) {
     FAT16Volume fat16 = getInfoFAT16();
 
-    strToUpper(filename);
+    strToUpper(fileName);
     unsigned char fileType;
-    int filePosition = findFileFatVolume(fd, fat16, filename, &fileType);
+    int filePosition = findFileFatVolume(fd, fat16, fileName, &fileType);
 
     if (fileType == FILE_TYPE) {
         FAT16Directory fatDir = getInfoFAT16Directory(fd, filePosition);

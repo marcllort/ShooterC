@@ -3,8 +3,6 @@
 //
 #include "../include/EXT2.h"
 
-// FASE 1
-
 void printInfoExt2(Ext2Volume ext2) {
 
     printf("------ Filesystem Information ------\n\n");
@@ -68,7 +66,6 @@ int isEXT2(int fileDescriptor) {
     return 0;
 }
 
-
 Ext2Volume getInfoEXT2() {
     Ext2Volume ext2;
 
@@ -120,5 +117,384 @@ Ext2Volume getInfoEXT2() {
     lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.lastWritten, sizeof(uint32_t));
 
+    ext2.blockSize = 1024 << ext2.blockSize;       // 3.1.7 Documentation EX2
+
     return ext2;
+}
+
+Ext2Directory getInfoEXT2Directory(int fd, unsigned int filePosition) {
+    Ext2Directory extDir;
+    lseek(fd, filePosition, SEEK_SET);
+    memset(extDir.fileName, 0, 255);            // Clear fileName var
+
+    read(fd, &extDir.inode, sizeof(uint32_t));
+    read(fd, &extDir.recordLength, sizeof(uint16_t));
+    read(fd, &extDir.nameLength, sizeof(unsigned char));
+    read(fd, &extDir.fileType, sizeof(unsigned char));
+    read(fd, &extDir.fileName, extDir.nameLength);
+
+    return extDir;
+}
+
+InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
+
+    InodeEntry inodeEntry;
+    unsigned long seekPosition = 0;
+    unsigned long inodeTablePosition = 0;
+    unsigned long inodeSeekPosition = 0;
+    unsigned long groupDescriptor = 0;
+
+    if (ext2.firstDataBlock == 0) {
+        groupDescriptor = ext2.blockSize;
+    } else {
+        groupDescriptor = 2048;
+    }
+
+    lseek(fd, groupDescriptor + 8, SEEK_SET);
+    read(fd, &inodeTablePosition, 4);
+
+    inodeSeekPosition = inodeTablePosition * ext2.blockSize;
+    seekPosition = inodeSeekPosition + (inodeNum - 1) * ext2.inodeSize;
+
+    seekPosition += 4;
+    lseek(fd, seekPosition, SEEK_SET);
+    read(fd, &inodeEntry.i_size, 4);
+
+    seekPosition += 36;
+    lseek(fd, seekPosition, SEEK_SET);
+
+    for (int i = 0; i < 15; i++) {
+        lseek(fd, seekPosition, SEEK_SET);
+        inodeEntry.i_block[i] = 0;
+        read(fd, &inodeEntry.i_block[i], sizeof(uint32_t));
+        seekPosition = seekPosition + 4;
+    }
+
+    return inodeEntry;
+}
+
+int findFileInEXT2(char *fileName) {
+    Ext2Volume ext2 = getInfoEXT2();
+
+    unsigned char fileType;
+    int filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, 2);
+
+    if (fileType == FILE_TYPE) {
+        Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
+        InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
+        printf("File found! Size: %lu bytes\n", extInode.i_size);
+    } else if (fileType == DIR_TYPE) {
+        printf("Directory found!\n");
+    } else {
+        printf("File not found!\n");
+    }
+
+    return 0;
+}
+
+int function(){
+
+}
+
+int findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
+
+    unsigned long retorno = 0;
+    unsigned long dirOffset = 0;
+    unsigned long dirOffset2 = 0;
+    unsigned long dirOffset3 = 0;
+    unsigned long dirOffset4 = 0;
+    int blockPoint = 0;
+    unsigned long blockPointer1 = 0;
+    unsigned long blockPointer2 = 0;
+    unsigned long blockPointer3 = 0;
+    InodeEntry inode;
+    Ext2Directory ext2Dir;
+    unsigned long sumBlock = 0;
+    unsigned long sumBlock2 = 0;
+    unsigned long sumBlock3 = 0;
+    unsigned long sumBlock4 = 0;
+    unsigned long offset;
+
+
+    inode = getInodeData(fd, ext2, inodeNumber);
+
+
+    // Primeros 12 bloques del inodo
+    for (blockPoint = 0; blockPoint < 12; blockPoint++) {
+        sumBlock = 0;
+        if (inode.i_block[blockPoint] == 0) {
+            return 0;
+        }
+
+        dirOffset = inode.i_block[blockPoint] * ext2.blockSize;
+
+        do {
+
+            ext2Dir = getInfoEXT2Directory(fd, dirOffset);
+            // Comprobamos si el nombre coincide y si es una entrada de directorio valida!
+            if (ext2Dir.inode != 0) {
+                if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                    if (ext2Dir.fileType == 1) {
+                        //printf("Es un fichero: %s \n", ext2Dir.fileName);
+                        *fileType = 1;
+                        return dirOffset;    // Devolvemos el offset de la dirEntry, para mostrar podremos volver a leer el size y para copiar podremos mirar el inode.
+                    }
+                    if (ext2Dir.fileType == 2) {
+                        //printf("Es un directorio: %s \n", ext2Dir.fileName);
+                        *fileType = 2;
+                        return dirOffset;
+                    }
+
+                } else {
+                    // Solo nos interesan los directorios en esta zona
+                    if (ext2Dir.fileType == 2) {
+
+                        if (strcmp(ext2Dir.fileName, ".") != 0 && strcmp(ext2Dir.fileName, "..") != 0) {
+                            //printf(">> Entrando en el directorio %s \n",ext2Dir.fileName);
+
+                            // Entramos en el directorio y nos lo pateamos!
+                            retorno = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                            if (retorno != 0) {
+                                return retorno;
+                            }
+                        }
+                    }
+                }
+            }
+
+            dirOffset += ext2Dir.recordLength;
+            sumBlock += ext2Dir.recordLength;
+            //printf("Valor de sumblock %lu - valor de offset %lu \n",sumBlock, dirOffset);
+        } while (sumBlock < ext2.blockSize);
+
+    }
+
+    // Primer puntero indirecto
+
+    if (inode.i_block[12] != 0) {
+        sumBlock = 0;
+        dirOffset = inode.i_block[12] * ext2.blockSize;
+        // Ahora estamos posicionado en el bloque que contendra punteros a los bloques de informacion
+        do {
+            lseek(fd, dirOffset, SEEK_SET);
+            read(fd, &blockPointer1, sizeof(unsigned int));
+
+            // No hay mas informacion guardada en este bloque
+            if (blockPointer1 == 0) {
+                return 0;
+            }
+            dirOffset2 = blockPointer1 * ext2.blockSize;
+
+            sumBlock2 = 0;
+            do {
+                ext2Dir = getInfoEXT2Directory(fd, dirOffset2);
+                if (ext2Dir.inode != 0) {
+                    if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                        if (ext2Dir.fileType == 1) {
+                            *fileType = 1;
+                            return dirOffset2;    // Devolvemos el offset de la dirEntry, para mostrar podremos volver a leer el size y para copiar podremos mirar el inode.
+                        }
+                        if (ext2Dir.fileType == 2) {
+                            *fileType = 2;
+                            return dirOffset2;
+                        }
+
+                    } else {
+                        // Solo nos interesan los directorios en esta zona
+                        if (ext2Dir.fileType == 2) {
+
+                            if (strcmp(ext2Dir.fileName, ".") != 0 && strcmp(ext2Dir.fileName, "..") != 0) {
+                                //printf(">> Entrando en el directorio %s \n",ext2Dir.fileName);
+
+                                // Entramos en el directorio y nos lo pateamos!
+                                retorno = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                                if (retorno != 0) {
+                                    return retorno;
+                                }
+                            }
+                        }
+                    }
+                }
+                dirOffset2 += ext2Dir.recordLength;
+                sumBlock2 += ext2Dir.recordLength;
+            } while (sumBlock2 < ext2.blockSize);
+            // Sumamos el puntero leido
+            sumBlock += 4;
+            dirOffset += 4;
+        } while (sumBlock < ext2.blockSize);
+    }
+
+    sumBlock = 0;
+    sumBlock2 = 0;
+    blockPointer1 = 0;
+    blockPointer2 = 0;
+    dirOffset = 0;
+    dirOffset2 = 0;
+
+    // Buscamos dentro del puntero doble indirecto
+    if (inode.i_block[13] != 0) {
+        sumBlock = 0;
+        dirOffset = inode.i_block[13] * ext2.blockSize;
+
+        do {
+            lseek(fd, dirOffset, SEEK_SET);
+            read(fd, &blockPointer1, sizeof(unsigned int));
+
+            if (blockPointer1 == 0) { return 0; }
+
+            blockPointer2 = 0;
+            dirOffset2 = blockPointer1 * ext2.blockSize;
+            sumBlock2 = 0;
+
+            do {
+
+                lseek(fd, dirOffset2, SEEK_SET);
+                read(fd, &blockPointer2, sizeof(unsigned int));
+
+                if (blockPointer2 == 0) { return 0; }
+                sumBlock3 = 0;
+
+                dirOffset3 = blockPointer2 * ext2.blockSize;
+
+                do {
+                    lseek(fd, dirOffset3, SEEK_SET);
+                    ext2Dir = getInfoEXT2Directory(fd, dirOffset3);
+
+                    if (ext2Dir.inode != 0) {
+                        if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                            if (ext2Dir.fileType == 1) {
+                                //printf("P13 Es un fichero: %s \n",ext2Dir.fileName);
+                                *fileType = 1;
+                                return dirOffset3;    // Devolvemos el offset de la dirEntry, para mostrar podremos volver a leer el size y para copiar podremos mirar el inode.
+                            }
+                            if (ext2Dir.fileType == 2) {
+                                //printf("P13 Es un directorio: %s \n",ext2Dir.fileName);
+                                *fileType = 2;
+                                return dirOffset3;
+                            }
+
+                        } else {
+                            // Solo nos interesan los directorios en esta zona
+                            if (ext2Dir.fileType == 2) {
+
+                                if (strcmp(ext2Dir.fileName, ".") != 0 && strcmp(ext2Dir.fileName, "..") != 0) {
+                                    //printf(">> P13 Entrando en el directorio %s \n",ext2Dir.fileName);
+
+                                    // Entramos en el directorio y nos lo pateamos!
+                                    retorno = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                                    if (retorno != 0) {
+                                        return retorno;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    sumBlock3 += ext2Dir.recordLength;
+                    dirOffset3 += ext2Dir.recordLength;
+                } while (sumBlock3 < ext2.blockSize);
+
+                sumBlock2 += 4;
+                dirOffset2 += 4;
+            } while (sumBlock2 < ext2.blockSize);
+
+            sumBlock += 4;
+            dirOffset += 4;
+        } while (sumBlock < ext2.blockSize);
+    }
+    // Buscamos dentro del puntero triple indirectos
+
+    if (inode.i_block[14] != 0) {
+        sumBlock = 0;
+        sumBlock2 = 0;
+        sumBlock3 = 0;
+        dirOffset = 0;
+        dirOffset2 = 0;
+        dirOffset3 = 0;
+        dirOffset4 = 0;
+        blockPoint = 0;
+        blockPointer1 = 0;
+        blockPointer2 = 0;
+        blockPointer3 = 0;
+        dirOffset = inode.i_block[14] * ext2.blockSize;
+
+        do {
+            lseek(fd, dirOffset, SEEK_SET);
+            read(fd, &blockPointer1, sizeof(unsigned int));
+            if (blockPointer1 == 0) { return 0; }
+            blockPointer2 = 0;
+            sumBlock2 = 0;
+            dirOffset2 = blockPointer1 * ext2.blockSize;
+
+            do {
+                lseek(fd, dirOffset2, SEEK_SET);
+                read(fd, &blockPointer2, sizeof(unsigned int));
+                if (blockPointer2 == 0) { return 0; }
+                blockPointer3 = 0;
+                sumBlock3 = 0;
+                dirOffset3 = blockPointer2 * ext2.blockSize;
+                do {
+                    lseek(fd, dirOffset3, SEEK_SET);
+                    read(fd, &blockPointer3, sizeof(unsigned int));
+
+                    if (blockPointer3 == 0) { return 0; }
+                    dirOffset4 = blockPointer3 * ext2.blockSize;
+                    sumBlock4 = 0;
+
+                    do {
+                        lseek(fd, dirOffset4, SEEK_SET);
+                        ext2Dir = getInfoEXT2Directory(fd, dirOffset4);
+                        if (ext2Dir.inode != 0) {
+                            if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                                if (ext2Dir.fileType == 1) {
+                                    //printf("P13 Es un fichero: %s \n",ext2Dir.fileName);
+                                    *fileType = 1;
+                                    return dirOffset4;    // Devolvemos el offset de la dirEntry, para mostrar podremos volver a leer el size y para copiar podremos mirar el inode.
+                                }
+                                if (ext2Dir.fileType == 2) {
+                                    //printf("P13 Es un directorio: %s \n",ext2Dir.fileName);
+                                    *fileType = 2;
+                                    return dirOffset4;
+                                }
+
+                            } else {
+                                // Solo nos interesan los directorios en esta zona
+                                if (ext2Dir.fileType == 2) {
+
+                                    if (strcmp(ext2Dir.fileName, ".") != 0 && strcmp(ext2Dir.fileName, "..") != 0) {
+                                        printf(">> P13 Entrando en el directorio %s \n", ext2Dir.fileName);
+
+                                        // Entramos en el directorio y nos lo pateamos!
+                                        retorno = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                                        if (retorno != 0) {
+                                            return retorno;
+                                        }
+                                    }
+                                } else {
+                                    printf("Comprobando %s \n", ext2Dir.fileName);
+                                }
+                            }
+                        }
+                        sumBlock4 += ext2Dir.recordLength;
+                        dirOffset4 += ext2Dir.recordLength;
+
+
+                    } while (sumBlock4 < ext2.blockSize);
+
+                    sumBlock3 += 4;
+                    dirOffset3 += 4;
+                } while (sumBlock3 < ext2.blockSize);
+
+                sumBlock2 += 4;
+                dirOffset2 += 4;
+            } while (sumBlock2 < ext2.blockSize);
+
+
+            sumBlock += 4;
+            dirOffset += 4;
+        } while (sumBlock < ext2.blockSize);
+    }
+
+
+    return retorno;
+
 }

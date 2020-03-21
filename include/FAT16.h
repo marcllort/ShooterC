@@ -32,10 +32,6 @@ int fd;
 #define SECTORS_FAT "Sectors per FAT: %d\n"
 #define LABEL "Label: %s\n"
 
-#define NOT_FOUND -1
-#define FILE_TYPE 1
-#define DIR_TYPE 2
-
 
 int isFAT16(int fileDescriptor);
 
@@ -50,5 +46,7 @@ int findFileFAT16(char *filename);
 int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType);
 
 void findInFAT16(char *filename);
+
+
 
 #endif //SHOOTERC_FAT16_H

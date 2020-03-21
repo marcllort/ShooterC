@@ -18,11 +18,11 @@
 #include <stdarg.h>
 #include <time.h>
 #include "Types.h"
+#include "Utils.h"
 
 int fd;
 
 // Inode Info
-#define INODE_INFO "INODE INFO\n"
 #define INODE_SIZE "Inode Size: %d\n"
 #define NUMBER_INODES "Number of Inodes: %d\n"
 #define FIRST_INODE "First Inode: %d\n"
@@ -30,7 +30,6 @@ int fd;
 #define FREE_INODES "Free Inodes: %d\n\n"
 
 // Block Info
-#define BLOCK_INFO "BLOCK INFO\n"
 #define BLOCK_SIZE "Block Size: %.2f\n"
 #define RESERVED_BLOCK "Reserved Blocks: %d\n"
 #define FREE_BLOCKS "Free Blocks: %d\n"
@@ -40,13 +39,11 @@ int fd;
 #define FRAGS_GROUP "Frags Group: %d\n\n"
 
 // Volume Info
-#define VOLUME_INFO "VOLUME INFO\n"
 #define VOLUME_NAME "Volume name: %s\n"
 #define LAST_CHECK_VOL "Last check: %s"
 #define LAST_MOUNT_VOL "Last mount: %s"
 #define LAST_WRITTEN "Last written: %s"
 
-void showInfoEXT2();
 
 void printInfoExt2(Ext2Volume ext2);
 
@@ -55,5 +52,13 @@ struct tm *getTime(uint32_t time);
 int isEXT2(int fileDescriptor);
 
 Ext2Volume getInfoEXT2();
+
+Ext2Directory getInfoEXT2Directory(int fd, unsigned int filePosition);
+
+InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum);
+
+int findFileInEXT2(char *fileName);
+
+int findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber);
 
 #endif //SHOOTERC_EXT2_H

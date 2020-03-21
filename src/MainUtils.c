@@ -29,7 +29,7 @@ void searchInFileSystem(char *filesystem, char *filename) {
         return;
     }
     if (isEXT2(fd)) {
-        // Search in ext2
+        findFileInEXT2(filename);
     } else if (isFAT16(fd)) {
         findFileFAT16(filename);
     } else {
