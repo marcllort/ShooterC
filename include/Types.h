@@ -40,8 +40,24 @@ typedef struct {
 } Ext2Directory;
 
 typedef struct {
+    unsigned long i_mode;
+    unsigned long i_uid;
     unsigned long i_size;
+    unsigned long i_atime;
+    unsigned long i_ctime;
+    unsigned long i_mtime;
+    unsigned long i_dtime;
+    unsigned long i_gid;
+    unsigned long i_links_count;
+    unsigned long i_blocks;
+    unsigned long i_flags;
+    unsigned long i_osd1;
     unsigned long i_block[15];
+    unsigned long i_generation;
+    unsigned long i_file_acl;
+    unsigned long i_dir_acl;
+    unsigned long i_faddr;
+    unsigned long i_osd2;
 } InodeEntry;
 
 typedef struct {
