@@ -3,32 +3,6 @@
 //
 #include "../include/EXT2.h"
 
-// GENERAL
-
-int isEXT2(int fileDescriptor) {
-    uint32_t compat;
-    uint32_t incompat;
-    int extent, journal;
-
-    // Saving the file to our global fd
-    fd = fileDescriptor;
-
-    // Check compat field and check if it's set to 1 or 0
-    lseek(fd, 1116, SEEK_SET);
-    read(fd, &compat, sizeof(uint32_t));
-    journal = compat & 0x4;
-    // Check incompat field and check if it's set to 1 or 0
-    lseek(fd, 1120, SEEK_CUR);
-    read(fd, &incompat, sizeof(uint32_t));
-    extent = incompat & 0x40;
-
-    if (!journal && !extent) {
-        return 1;
-    }
-
-    return 0;
-}
-
 // FASE 1
 
 void printInfoExt2(Ext2Volume ext2) {
