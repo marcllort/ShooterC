@@ -52,21 +52,39 @@ FAT16Volume getInfoFAT16() {
     return fat16;
 }
 
+FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition) {
+    FAT16Directory fatDir;
+    lseek(fd, filePosition, SEEK_SET);
+
+    read(fd, &fatDir.name, 8);
+    fatDir.name[8] = '\0';
+    read(fd, &fatDir.extension, 3);
+    fatDir.extension[3] = '\0';
+    read(fd, &fatDir.fileAttribute, sizeof(unsigned char));
+    read(fd, &fatDir.reserved, 10);
+    read(fd, &fatDir.time, sizeof(uint16_t));
+    read(fd, &fatDir.date, sizeof(uint16_t));
+    read(fd, &fatDir.firstCluster, sizeof(uint16_t));
+    read(fd, &fatDir.size, sizeof(uint32_t));
+
+    return fatDir;
+}
+
 int findFileFAT16(char *filename) {
     FAT16Volume fat16 = getInfoFAT16();
 
     strToUpper(filename);
-    unsigned char filetype;
-    int file = findFileFatVolume(fd, fat16, filename, &filetype);
+    unsigned char fileType;
+    int filePosition = findFileFatVolume(fd, fat16, filename, &fileType);
 
-    if (filetype == FILE_TYPE) {
-        printf("File found!\n");
-    } else if (filetype == DIR_TYPE) {
+    if (fileType == FILE_TYPE) {
+        FAT16Directory fatDir = getInfoFAT16Directory(fd, filePosition);
+        printf("File found! Size: %d bytes\n", fatDir.size);
+    } else if (fileType == DIR_TYPE) {
         printf("Directory found!\n");
     } else {
         printf("File not found!\n");
     }
-
 
     return 0;
 }
@@ -78,7 +96,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
     char extension[4];                  // Found file extension
     int extensionLength = 0;            // Found file extension length
     char findFileName[14];              // Complete found fileName (name+extension)
-    unsigned int fileSize = 0;          // Found file size
+    uint32_t fileSize = 0;              // Found file size
     unsigned char fileAttributes = 0;   // Found file properties (file or directory)
 
     int fileSearchPosition = 0;         // Position to start finding
@@ -121,7 +139,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
             if (strcmp(findFileName, fileName) == 0) {
                 // Read file size
                 lseek(fd, 16, SEEK_CUR);
-                read(fd, &fileSize, sizeof(unsigned int));
+                read(fd, &fileSize, sizeof(uint32_t));
                 // Save file type
                 if ((fileAttributes & 0x20) == 0x20) {
                     *fileType = FILE_TYPE;

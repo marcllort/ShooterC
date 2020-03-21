@@ -43,6 +43,9 @@ int isFAT16(int fileDescriptor);
 
 FAT16Volume getInfoFAT16();
 
+FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition);
+
+
 int findFileFAT16(char *filename);
 
 int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType);
