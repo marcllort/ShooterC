@@ -192,75 +192,54 @@ int findFileInEXT2(char *fileName) {
     return 0;
 }
 
+unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
 
-int findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
+    unsigned long filePosition = 0;
+    unsigned long offset = 0;
+    unsigned long actualBlockSize = 0;
 
-    unsigned long retorno = 0;
-    unsigned long dirOffset = 0;
-
-    int blockPoint = 0;
-    InodeEntry inode;
     Ext2Directory ext2Dir;
-    unsigned long sumBlock = 0;
+    InodeEntry inode = getInodeData(fd, ext2, inodeNumber);
 
+    for (int blockPointer = 0; blockPointer < 12; blockPointer++) {
 
-    inode = getInodeData(fd, ext2, inodeNumber);
-
-
-    // Primeros 12 bloques del inodo
-    for (blockPoint = 0; blockPoint < 12; blockPoint++) {
-        sumBlock = 0;
-        if (inode.i_block[blockPoint] == 0) {
+        actualBlockSize = 0;
+        if (inode.i_block[blockPointer] == 0) {
             return 0;
+        } else {
+            offset = inode.i_block[blockPointer] * ext2.blockSize;
         }
 
-        dirOffset = inode.i_block[blockPoint] * ext2.blockSize;
-
-        do {
-
-            ext2Dir = getInfoEXT2Directory(fd, dirOffset);
-            // Comprobamos si el nombre coincide y si es una entrada de directorio valida!
+        while (actualBlockSize < ext2.blockSize) {
+            ext2Dir = getInfoEXT2Directory(fd, offset);
+            // Check if name is the same as the one we are looking for
             if (ext2Dir.inode != 0) {
                 if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                    // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == 1) {
-                        //printf("Es un fichero: %s \n", ext2Dir.fileName);
                         *fileType = 1;
-                        return dirOffset;    // Devolvemos el offset de la dirEntry, para mostrar podremos volver a leer el size y para copiar podremos mirar el inode.
-                    }
-                    if (ext2Dir.fileType == 2) {
-                        //printf("Es un directorio: %s \n", ext2Dir.fileName);
+                        return offset;
+                    } else if (ext2Dir.fileType == 2) {
                         *fileType = 2;
-                        return dirOffset;
+                        return offset;
                     }
-
                 } else {
-                    // Solo nos interesan los directorios en esta zona
+                    // If it's a folder, we do a recursive call to look for the file
                     if (ext2Dir.fileType == 2) {
-
-                        if (strcmp(ext2Dir.fileName, ".") != 0 && strcmp(ext2Dir.fileName, "..") != 0) {
-                            //printf(">> Entrando en el directorio %s \n",ext2Dir.fileName);
-
-                            // Entramos en el directorio y nos lo pateamos!
-                            retorno = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
-                            if (retorno != 0) {
-                                return retorno;
+                        if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
+                            filePosition = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                            // If returned a position different than 0, it means we found the file
+                            if (filePosition != 0) {
+                                return filePosition;
                             }
                         }
                     }
                 }
             }
-
-            dirOffset += ext2Dir.recordLength;
-            sumBlock += ext2Dir.recordLength;
-            //printf("Valor de sumblock %lu - valor de offset %lu \n",sumBlock, dirOffset);
-        } while (sumBlock < ext2.blockSize);
-
+            offset += ext2Dir.recordLength;
+            actualBlockSize += ext2Dir.recordLength;
+        }
     }
 
-    // Primer puntero indirecto
-
-
-
-    return retorno;
-
+    return filePosition;
 }
