@@ -3,7 +3,18 @@
 //
 #include "../include/FAT16.h"
 
-int findFileFatVolume();
+int isFAT16(int fileDescriptor) {
+    fd = fileDescriptor;
+    char aux[8];
+    lseek(fd, 54, SEEK_SET);
+    read(fd, &aux, 8);
+
+    if (memcmp(aux, "FAT16", sizeof(char) * 5) == 0) {
+        return 1;
+    }
+
+    return 0;
+}
 
 void printInfoFat16(FAT16Volume fat16) {
     printf("------ Filesystem Information ------ \n\n");
@@ -17,19 +28,6 @@ void printInfoFat16(FAT16Volume fat16) {
     printf(ROOT_ENTRIES, (fat16.rootEntries));
     printf(SECTORS_FAT, (fat16.sectorsFat));
     printf(LABEL, fat16.volumeName);
-}
-
-int isFAT16(int fileDescriptor) {
-    fd = fileDescriptor;
-    char aux[8];
-    lseek(fd, 54, SEEK_SET);
-    read(fd, &aux, 8);
-
-    if (memcmp(aux, "FAT16", sizeof(char) * 5) == 0) {
-        return 1;
-    }
-
-    return 0;
 }
 
 FAT16Volume getInfoFAT16() {
@@ -161,7 +159,6 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
     }
 
     return NOT_FOUND;
-
 }
 
 

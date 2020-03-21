@@ -6,28 +6,27 @@
 
 void strToUpper(char *string) {
     int size = strlen(string);
-    int i=0;
+    int i = 0;
 
-    for ( i=0; i<size; i++ ) {
+    for (i = 0; i < size; i++) {
         string[i] = toupper(string[i]);
     }
 }
 
 int fatStrLen(char *string) {
-    // Despues de comprobar que el strlen no devuelve correctamente la longitud y ya que en FAT no pueden haber espacios.
-    int fakeSize = strlen(string);
+    int size = strlen(string);
     int i = 0;
 
-    for ( i = 0; i<fakeSize; i++) {
-        if (string[i]==' ' || string[i]=='\0' ) {
+    for (i = 0; i < size; i++) {
+        // FAT16 doesn't support spaces, so if found space or \0, return size
+        if (string[i] == ' ' || string[i] == '\0') {
             break;
         }
-        if ( (string[i]=='+') || (string[i] == ',') || (string[i] == ';') || (string[i] == '=') || (string[i] == '[') || (string[i] == ']') ) {
-            // Entrada no valida, contiene caracteres no validos para FAT
-            // por lo tanto devolvemos 0 como si no hubieramos encontrado nada.
+        if ((string[i] == '+') || (string[i] == ',') || (string[i] == ';') || (string[i] == '=') ||
+            (string[i] == '[') || (string[i] == ']')) {
+            // Check invalid FAT16 characters, if found, error
             return 0;
         }
     }
-
     return i;
 }

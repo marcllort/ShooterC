@@ -37,14 +37,13 @@ int fd;
 #define DIR_TYPE 2
 
 
-void printInfoFat16(FAT16Volume fat16);
-
 int isFAT16(int fileDescriptor);
+
+void printInfoFat16(FAT16Volume fat16);
 
 FAT16Volume getInfoFAT16();
 
 FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition);
-
 
 int findFileFAT16(char *filename);
 
