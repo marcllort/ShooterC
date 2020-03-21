@@ -1,24 +1,33 @@
 //
-// Created by mac12 on 17/03/2020.
+// Created by mac12 on 21/03/2020.
 //
 
 #include "../include/Utils.h"
 
-void infoFileSystem(char *filename) {
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        printf("Error, filesystem not found! %s\n", filename);
-        return;
+void strToUpper(char *string) {
+    int size = strlen(string);
+    int i=0;
+
+    for ( i=0; i<size; i++ ) {
+        string[i] = toupper(string[i]);
     }
-    if (isEXT2(fd)) {
-        showInfoEXT2();
-    } else if (isFAT16(fd)){
-        showInfoFAT16();
-    } else{
-        printf("Filesystem not recognized! \n");
-    }
-    close(fd);
 }
 
+int fatStrLen(char *string) {
+    // Despues de comprobar que el strlen no devuelve correctamente la longitud y ya que en FAT no pueden haber espacios.
+    int fakeSize = strlen(string);
+    int i = 0;
 
+    for ( i = 0; i<fakeSize; i++) {
+        if (string[i]==' ' || string[i]=='\0' ) {
+            break;
+        }
+        if ( (string[i]=='+') || (string[i] == ',') || (string[i] == ';') || (string[i] == '=') || (string[i] == '[') || (string[i] == ']') ) {
+            // Entrada no valida, contiene caracteres no validos para FAT
+            // por lo tanto devolvemos 0 como si no hubieramos encontrado nada.
+            return 0;
+        }
+    }
 
+    return i;
+}

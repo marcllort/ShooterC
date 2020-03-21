@@ -3,6 +3,8 @@
 //
 #include "../include/FAT16.h"
 
+int findFileFatVolume();
+
 void printInfoFat16(FAT16Volume fat16) {
     printf("------ Filesystem Information ------ \n\n");
     printf("FileSystem: FAT16\n\n");
@@ -30,8 +32,7 @@ int isFAT16(int fileDescriptor) {
     return 0;
 }
 
-void showInfoFAT16() {
-
+FAT16Volume getInfoFAT16() {
     FAT16Volume fat16;
 
     lseek(fd, 3, SEEK_SET);
@@ -41,11 +42,108 @@ void showInfoFAT16() {
     read(fd, &fat16.reservedSectors, sizeof(uint16_t));
     read(fd, &fat16.numberFats, sizeof(uint8_t));
     read(fd, &fat16.rootEntries, sizeof(uint32_t));
+    lseek(fd, 22, SEEK_SET);
     read(fd, &fat16.sectorsFat, sizeof(uint16_t));
 
     lseek(fd, 43, SEEK_SET);
     read(fd, &fat16.volumeName, 12);
     fat16.volumeName[11] = 0;
 
-    printInfoFat16(fat16);
+    return fat16;
 }
+
+int findFileFAT16(char *filename) {
+    FAT16Volume fat16 = getInfoFAT16();
+
+    strToUpper(filename);
+    unsigned char filetype;
+    int file = findFileFatVolume(fd, fat16, filename, &filetype);
+
+    if (filetype == FILE_TYPE) {
+        printf("File found!\n");
+    } else if (filetype == DIR_TYPE) {
+        printf("Directory found!\n");
+    } else {
+        printf("File not found!\n");
+    }
+
+
+    return 0;
+}
+
+int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType) {
+
+    char name[10];                      // Found file name
+    int nameLength = 0;                 // Found file name length
+    char extension[4];                  // Found file extension
+    int extensionLength = 0;            // Found file extension length
+    char findFileName[14];              // Complete found fileName (name+extension)
+    unsigned int fileSize = 0;          // Found file size
+    unsigned char fileAttributes = 0;   // Found file properties (file or directory)
+
+    int fileSearchPosition = 0;         // Position to start finding
+
+    // Root directory position
+    unsigned int rootDirectory = ((fat16.reservedSectors * fat16.sectorSize) +
+                                  (fat16.numberFats * fat16.sectorsFat * fat16.sectorSize));
+    lseek(fd, rootDirectory, SEEK_SET);
+    fileSearchPosition = rootDirectory;
+
+    // Iterate through current root entrance entries
+    for (int i = 0; i < fat16.rootEntries; i++) {
+
+        // Clean variables
+        memset(name, 0, 10);
+        memset(extension, 0, 4);
+        memset(findFileName, 0, 14);
+
+        // Read file name
+        read(fd, name, 8);
+        nameLength = fatStrLen(name);
+        name[nameLength] = '\0';
+        strcat(findFileName, name);
+        //printf("Found: [%s] == [%s] \n", name, fileName);
+
+        if (nameLength > 0) {
+            read(fd, extension, 3);
+            extensionLength = fatStrLen(extension);
+            extension[extensionLength] = '\0';
+
+            if (extensionLength > 0) {
+                strcat(findFileName, ".");
+                strcat(findFileName, extension);
+            }
+
+            // Read fileAttributes to know what type of file is
+            read(fd, &fileAttributes, sizeof(unsigned char));
+
+            // Check if it's the file we were looking for
+            if (strcmp(findFileName, fileName) == 0) {
+                // Read file size
+                lseek(fd, 16, SEEK_CUR);
+                read(fd, &fileSize, sizeof(unsigned int));
+                // Save file type
+                if ((fileAttributes & 0x20) == 0x20) {
+                    *fileType = FILE_TYPE;
+                    return fileSearchPosition;
+                } else if ((fileAttributes & 0x10) == 0x10) {
+                    *fileType = DIR_TYPE;
+                    return fileSearchPosition;
+                }
+            } else {
+                // As we already moved 12bits to read name/extension and attributes, we move 32-8 = 24 bits to the next entry
+                lseek(fd, 20, SEEK_CUR);
+            }
+        } else {
+            // As we already moved 8bits to read name, we move 32-8 = 24 bits to the next entry
+            lseek(fd, 24, SEEK_CUR);
+        }
+        // Next entrance is 32 bits away
+        fileSearchPosition = fileSearchPosition + 32;
+    }
+
+    return NOT_FOUND;
+
+}
+
+

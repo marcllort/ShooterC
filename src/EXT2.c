@@ -65,13 +65,13 @@ int isEXT2(int fileDescriptor) {
 
     if (!journal && !extent) {
         return 1;
-    } 
+    }
 
     return 0;
 }
 
 
-void showInfoEXT2() {
+Ext2Volume getInfoEXT2() {
     Ext2Volume ext2;
 
     lseek(fd, 1024, SEEK_SET);
@@ -122,6 +122,5 @@ void showInfoEXT2() {
     lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.lastWritten, sizeof(uint32_t));
 
-
-    printInfoExt2(ext2);
+    return ext2;
 }

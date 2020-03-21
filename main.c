@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "./include/Utils.h"
+#include "include/MainUtils.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (!argc) {
         printf("Parameters are needed to run the program. Try again! \n");
     } else {
@@ -10,6 +10,12 @@ int main(int argc, char* argv[]) {
                 printf("Incorrect number of parameters for the Info function! \n");
             } else {
                 infoFileSystem(argv[2]);
+            }
+        } else if (strcmp(argv[1], "/find") == 0) {
+            if (argc != 4) {
+                printf("Incorrect number of parameters for the Find function! \n");
+            } else {
+                searchInFileSystem(argv[2], argv[3]);
             }
         } else {
             printf("Functionality not supported yet! \n");
