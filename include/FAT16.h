@@ -13,11 +13,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
 #include <time.h>
 #include "Types.h"
+#include "Utils.h"
 
 int fd;
 
@@ -29,13 +31,23 @@ int fd;
 #define ROOT_ENTRIES "Maximum Root Entries: %d\n"
 #define SECTORS_FAT "Sectors per FAT: %d\n"
 #define LABEL "Label: %s\n"
-#define ROOT_CLUSTER "\nREMOVE!!\nRootCluster: %hhu\n\n"
+
+#define NOT_FOUND -1
+#define FILE_TYPE 1
+#define DIR_TYPE 2
+
 
 int isFAT16(int fileDescriptor);
 
 void printInfoFat16(FAT16Volume fat16);
 
-void showInfoFAT16();
+FAT16Volume getInfoFAT16();
+
+FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition);
+
+int findFileFAT16(char *filename);
+
+int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType);
 
 void findInFAT16(char *filename);
 

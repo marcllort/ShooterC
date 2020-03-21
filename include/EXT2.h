@@ -54,6 +54,6 @@ struct tm *getTime(uint32_t time);
 
 int isEXT2(int fileDescriptor);
 
-void findInEXT2(char *filename);
+Ext2Volume getInfoEXT2();
 
 #endif //SHOOTERC_EXT2_H

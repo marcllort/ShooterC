@@ -70,7 +70,32 @@ struct tm *getTime(uint32_t time) {
     return timeInfo;
 }
 
-void showInfoEXT2() {
+int isEXT2(int fileDescriptor) {
+    uint32_t compat;
+    uint32_t incompat;
+    int extent, journal;
+
+    // Saving the file to our global fd
+    fd = fileDescriptor;
+
+    // Check feature_compat field and check if it's set to 1 or 0
+    lseek(fd, 1116, SEEK_SET);
+    read(fd, &compat, sizeof(uint32_t));
+    journal = compat & 0x4;
+    // Check feature_incompat field and check if it's set to 1 or 0
+    lseek(fd, 1120, SEEK_CUR);
+    read(fd, &incompat, sizeof(uint32_t));
+    extent = incompat & 0x40;
+
+    if (!journal && !extent) {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+Ext2Volume getInfoEXT2() {
     Ext2Volume ext2;
 
     lseek(fd, 1024, SEEK_SET);
@@ -121,12 +146,5 @@ void showInfoEXT2() {
     lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.lastWritten, sizeof(uint32_t));
 
-
-    printInfoExt2(ext2);
-}
-
-// FASE 2
-
-void findInEXT2(char* filename){
-
+    return ext2;
 }

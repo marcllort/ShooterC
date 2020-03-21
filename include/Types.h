@@ -44,5 +44,16 @@ typedef struct {
 
 } FAT16Volume;
 
+typedef struct {
+    char name[12];
+    char extension[4];
+    unsigned char fileAttribute;
+    uint16_t reserved;
+    uint16_t time;
+    uint16_t date;
+    uint16_t firstCluster;
+    uint32_t size;
+} FAT16Directory;
+
 
 #endif //SHOOTERC_TYPES_H

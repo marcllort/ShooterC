@@ -1,15 +1,19 @@
 //
-// Created by mac12 on 17/03/2020.
+// Created by mac12 on 21/03/2020.
 //
 
 #ifndef SHOOTERC_UTILS_H
 #define SHOOTERC_UTILS_H
 
-#include "EXT2.h"
-#include "FAT16.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 #include "Types.h"
 
-void infoFileSystem(char *filename);
+void strToUpper(char *string);
+
+int fatStrLen(char *string);
+
 
 void findInFileSystem(char *filesystem, char *filename);
 

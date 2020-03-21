@@ -1,45 +1,32 @@
 //
-// Created by mac12 on 17/03/2020.
+// Created by mac12 on 21/03/2020.
 //
 
 #include "../include/Utils.h"
 
-void infoFileSystem(char *filename) {
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        printf("Error, filesystem not found! %s\n", filename);
-        return;
-    }
+void strToUpper(char *string) {
+    int size = strlen(string);
+    int i = 0;
 
-    int fat = isFAT16(fd);
-
-    if (fat == 1) {
-        showInfoFAT16();
-    } else if (isEXT2(fd) && fat != -1) {
-        showInfoEXT2();
-    } else {
-        printf("Filesystem not recognized! \n");
+    for (i = 0; i < size; i++) {
+        string[i] = toupper(string[i]);
     }
-    close(fd);
 }
 
-void findInFileSystem(char *filesystem, char *filename) {
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        printf("Error, filesystem not found! %s\n", filename);
-        return;
-    }
+int fatStrLen(char *string) {
+    int size = strlen(string);
+    int i = 0;
 
-    int fat = isFAT16(fd);
-
-    if (fat == 1) {
-        findInFAT16(filename);
-    } else if (isEXT2(fd) && fat != -1) {
-        findInEXT2(filename);
-    } else {
-        printf("Filesystem not recognized! \n");
+    for (i = 0; i < size; i++) {
+        // FAT16 doesn't support spaces, so if found space or \0, return size
+        if (string[i] == ' ' || string[i] == '\0') {
+            break;
+        }
+        if ((string[i] == '+') || (string[i] == ',') || (string[i] == ';') || (string[i] == '=') ||
+            (string[i] == '[') || (string[i] == ']')) {
+            // Check invalid FAT16 characters, if found, error
+            return 0;
+        }
     }
-    close(fd);
+    return i;
 }
-
-
