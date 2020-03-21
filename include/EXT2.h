@@ -21,6 +21,7 @@
 #include "Utils.h"
 
 int fd;
+char* filename;
 
 // Inode Info
 #define INODE_SIZE "Inode Size: %d\n"
@@ -59,6 +60,6 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum);
 
 int findFileInEXT2(char *fileName);
 
-unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber);
+unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, char *fileType, int inodeNumber);
 
 #endif //SHOOTERC_EXT2_H

@@ -18,7 +18,6 @@ void strToUpper(char *string);
 
 int fatStrLen(char *string);
 
-
-void findInFileSystem(char *filesystem, char *filename);
+int UTILS_compare(const char *str1, const char *str2, int size);
 
 #endif //SHOOTERC_UTILS_H

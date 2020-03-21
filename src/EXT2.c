@@ -175,7 +175,7 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
 
 int findFileInEXT2(char *fileName) {
     Ext2Volume ext2 = getInfoEXT2();
-
+    filename = fileName;
     unsigned char fileType;
     int filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, 2);
 
@@ -192,7 +192,8 @@ int findFileInEXT2(char *fileName) {
     return 0;
 }
 
-unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
+
+unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, char *fileType, int inodeNumber) {
 
     unsigned long filePosition = 0;
     unsigned long offset = 0;
@@ -214,7 +215,7 @@ unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigne
             ext2Dir = getInfoEXT2Directory(fd, offset);
             // Check if name is the same as the one we are looking for
             if (ext2Dir.inode != 0) {
-                if (strcmp(ext2Dir.fileName, fileName) == 0) {
+                if (UTILS_compare(ext2Dir.fileName, filename, strlen(ext2Dir.fileName)) == 0) {
                     // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == 1) {
                         *fileType = 1;
