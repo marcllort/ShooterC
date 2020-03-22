@@ -178,7 +178,6 @@ int findFileInEXT2(char *fileName) {
     filename = fileName;
     unsigned char fileType;
     int filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, 2);
-
     if (fileType == FILE_TYPE) {
         Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
         InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
@@ -193,7 +192,7 @@ int findFileInEXT2(char *fileName) {
 }
 
 
-unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, char *fileType, int inodeNumber) {
+unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
 
     unsigned long filePosition = 0;
     unsigned long offset = 0;
@@ -215,20 +214,21 @@ unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, char *f
             ext2Dir = getInfoEXT2Directory(fd, offset);
             // Check if name is the same as the one we are looking for
             if (ext2Dir.inode != 0) {
-                if (UTILS_compare(ext2Dir.fileName, filename, strlen(ext2Dir.fileName)) == 0) {
+                //printf("FOUND: %s -- OG: %s -- FOUND: %d\n", ext2Dir.fileName, filename, UTILS_compare(ext2Dir.fileName, filename));
+                if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
-                    if (ext2Dir.fileType == 1) {
-                        *fileType = 1;
+                    if (ext2Dir.fileType == FILE_TYPE) {
+                        *fileType = FILE_TYPE;
                         return offset;
-                    } else if (ext2Dir.fileType == 2) {
-                        *fileType = 2;
+                    } else if (ext2Dir.fileType == DIR_TYPE) {
+                        *fileType = DIR_TYPE;
                         return offset;
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
                     if (ext2Dir.fileType == 2) {
                         if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
-                            filePosition = findFileExtVolume(fd, ext2, fileType, fileName, ext2Dir.inode);
+                            filePosition = findFileExtVolume(fd, ext2, fileName, fileType, ext2Dir.inode);
                             // If returned a position different than 0, it means we found the file
                             if (filePosition != 0) {
                                 return filePosition;

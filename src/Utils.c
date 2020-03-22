@@ -32,25 +32,28 @@ int fatStrLen(char *string) {
 }
 
 // String comparator
-int UTILS_compare(const char *str1, const char *str2, int size)
-{
+int UTILS_compare(const char *str1, const char *str2) {
+    int size1 = UTILS_sizeOf(str1);
+    int size2 = UTILS_sizeOf(str2);
+
+    if (size1 != size2) {
+        return 1;
+    }
+
     int i;
-    for (i = 0; i < size; i++)
+    for (i = 0; i < size1; i++)
         if (str1[i] != str2[i])
             return 1;
     return 0;
 }
 
 // String sizeOf, returns int with the size
-int UTILS_sizeOf(const char *str)
-{
+int UTILS_sizeOf(const char *str) {
     int j = 0;
     int i = 0;
 
-    while (j != 1)
-    {
-        if (str[i] == '\0')
-        {
+    while (j != 1) {
+        if (str[i] == '\0') {
             j = 1;
         }
         i++;

@@ -19,7 +19,7 @@ void strToUpper(char *string);
 
 int fatStrLen(char *string);
 
-int UTILS_compare(const char *str1, const char *str2, int size);
+int UTILS_compare(const char *str1, const char *str2);
 
 int UTILS_sizeOf(const char *str);
 
