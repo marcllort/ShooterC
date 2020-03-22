@@ -226,7 +226,7 @@ unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigne
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
-                    if (ext2Dir.fileType == 2) {
+                    if (ext2Dir.fileType == DIR_TYPE) {
                         if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
                             filePosition = findFileExtVolume(fd, ext2, fileName, fileType, ext2Dir.inode);
                             // If returned a position different than 0, it means we found the file
