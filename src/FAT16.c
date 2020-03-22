@@ -94,7 +94,7 @@ int findFileFAT16(char *fileName) {
     return 0;
 }
 
-int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, uint16_t firstCluster) {
+int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, uint32_t firstCluster) {
 
     char name[10];                      // Found file name
     int nameLength = 0;                 // Found file name length
@@ -123,7 +123,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
     //int size = size = fat16.sectorSize * fat16.sectorCluster / 16;
     //name[0] = 1;
     // Iterate through current root entrance entries
-    for (int i = 0; i < fat16.rootEntries && name[0] != 0; i++) {
+    for (int i = 0; i < fat16.rootEntries; i++) {
 
         // Clean variables
         memset(name, 0, 10);
@@ -135,7 +135,6 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
         nameLength = fatStrLen(name);
         name[nameLength] = '\0';
         strcat(findFileName, name);
-
 
         if (nameLength > 0) {
             read(fd, extension, 3);
@@ -178,26 +177,33 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
                         lseek(fd, 14, SEEK_CUR);
                         read(fd, &firstCluster, sizeof(uint16_t));
                         off_t pos = lseek(fd, 0, SEEK_CUR);
-                        printf("POS: %d\n", pos);
                         
                         int filePosition = 0;
                         if (firstCluster != 0){
                             //unsigned int rootDirectory = ((fat16.reservedSectors * fat16.sectorSize) + (fat16.numberFats * fat16.sectorsFat * fat16.sectorSize));
 
                             //unsigned long fatFirstDataSectorSeek = fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + ((fat16.rootEntries*32)+(fat16.sectorSize-1)/fat16.sectorSize);
-                            uint16_t RootDirSectors = ((fat16.rootEntries*32)+(fat16.sectorSize-1)/fat16.sectorSize);
-                            uint16_t FirstDataSector  = fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + RootDirSectors;
-                            uint16_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + FirstDataSector;
-                            //uint16_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + (fat16.sectorCluster*fat16.reservedSectors)+(fat16.numberFats * fat16.sectorsFat * fat16.sectorSize) + RootDirSectors;
+                            //uint16_t RootDirSectors = ((fat16.rootEntries*32)+(fat16.sectorSize-1)/fat16.sectorSize);
+                            //uint16_t FirstDataSector  = fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + RootDirSectors;
+                            //uint16_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fatFirstDataSectorSeek;
+
+                            uint32_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + (((fat16.rootEntries*32)+(fat16.sectorSize-1))/fat16.sectorSize);
+                            int n = firstCluster;
+                            printf("CLUSTERNUMBER: %d", n);
+                            //uint32_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) ;
+                            firstSectorOfCluster = firstSectorOfCluster * fat16.sectorSize;
+
                             printf("\n---------\n%s - CLUSTER: %d - %u\n---------\n\n",findFileName ,firstCluster,firstSectorOfCluster);
-                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, firstSectorOfCluster*fat16.sectorCluster);
+
+                            printf("FirstDataSector: %d\n", firstSectorOfCluster);
+
+                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, firstSectorOfCluster);
                             // If returned a position different than 0, it means we found the file
                             if (filePosition != 0) {
                                 return filePosition;
                             }
                             lseek(fd, pos, SEEK_SET);
-                            off_t pos = lseek(fd, 0, SEEK_CUR);
-                            printf("POS: %d\n", pos);
+                            lseek(fd, 0, SEEK_CUR);
                             lseek(fd, 4, SEEK_CUR);
                         }else{
                             lseek(fd, 4, SEEK_CUR);
