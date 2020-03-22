@@ -40,3 +40,21 @@ int UTILS_compare(const char *str1, const char *str2, int size)
             return 1;
     return 0;
 }
+
+// String sizeOf, returns int with the size
+int UTILS_sizeOf(const char *str)
+{
+    int j = 0;
+    int i = 0;
+
+    while (j != 1)
+    {
+        if (str[i] == '\0')
+        {
+            j = 1;
+        }
+        i++;
+    }
+    i--;
+    return i;
+}

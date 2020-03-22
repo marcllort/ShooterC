@@ -13,11 +13,14 @@
 #define NOT_FOUND -1
 #define FILE_TYPE 1
 #define DIR_TYPE 2
+#define UNDEFINED_TYPE 3
 
 void strToUpper(char *string);
 
 int fatStrLen(char *string);
 
 int UTILS_compare(const char *str1, const char *str2, int size);
+
+int UTILS_sizeOf(const char *str);
 
 #endif //SHOOTERC_UTILS_H

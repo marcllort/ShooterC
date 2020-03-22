@@ -84,6 +84,9 @@ int findFileFAT16(char *fileName) {
         printf("File found! Size: %d bytes\n", fatDir.size);
     } else if (fileType == DIR_TYPE) {
         printf("Directory found!\n");
+    } else if(fileType == UNDEFINED_TYPE){
+        FAT16Directory fatDir = getInfoFAT16Directory(fd, filePosition);
+        printf("Undefined type of file! Size: %d bytes\n", fatDir.size);
     } else {
         printf("File not found!\n");
     }
@@ -122,7 +125,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
         nameLength = fatStrLen(name);
         name[nameLength] = '\0';
         strcat(findFileName, name);
-        //printf("Found: [%s] == [%s] \n", name, fileName);
+        
 
         if (nameLength > 0) {
             read(fd, extension, 3);
@@ -136,9 +139,12 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
 
             // Read fileAttributes to know what type of file is
             read(fd, &fileAttributes, sizeof(unsigned char));
-
+            /*int size1 = UTILS_sizeOf(findFileName);
+            int size2 = UTILS_sizeOf(fileName);
+            
+            printf("Found: [%s] %d == [%s] %d FOUND? %d\n", findFileName, size1, fileName, size2, UTILS_compare(findFileName, fileName, 5)) ;*/
             // Check if it's the file we were looking for
-            if (strcmp(findFileName, fileName) == 0) {
+            if (UTILS_compare(findFileName, fileName, UTILS_sizeOf(findFileName)) == 0) {
                 // Read file size
                 lseek(fd, 16, SEEK_CUR);
                 read(fd, &fileSize, sizeof(uint32_t));
@@ -148,6 +154,9 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
                     return fileSearchPosition;
                 } else if ((fileAttributes & 0x10) == 0x10) {
                     *fileType = DIR_TYPE;
+                    return fileSearchPosition;
+                }else{
+                    *fileType = UNDEFINED_TYPE;
                     return fileSearchPosition;
                 }
             } else {
