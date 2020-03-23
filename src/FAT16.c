@@ -108,20 +108,21 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
 
     // Root directory position
     unsigned int rootDirectory = ((fat16.reservedSectors * fat16.sectorSize) +
-                                    (fat16.numberFats * fat16.sectorsFat * fat16.sectorSize));
+                                  (fat16.numberFats * fat16.sectorsFat * fat16.sectorSize));
 
-    if(firstCluster == 0){
-        
+    if (firstCluster == 0) {
         lseek(fd, rootDirectory, SEEK_SET);
-        printf("\n---------\nROOT: %u\n---------\n\n", rootDirectory);
         fileSearchPosition = rootDirectory;
-    }else{
-        lseek(fd, firstCluster, SEEK_SET);
-        fileSearchPosition = firstCluster;
+    } else {
+        // Equation to find out the direction of the cluster
+        uint32_t firstSectorOfCluster = ((firstCluster - 2) * fat16.sectorCluster) + fat16.reservedSectors +
+                                        (fat16.numberFats * fat16.sectorsFat) +
+                                        (((fat16.rootEntries * 32) + (fat16.sectorSize - 1)) / fat16.sectorSize);
+        firstSectorOfCluster = firstSectorOfCluster * fat16.sectorSize;
+        lseek(fd, firstSectorOfCluster, SEEK_SET);
+        fileSearchPosition = firstSectorOfCluster;
     }
 
-    //int size = size = fat16.sectorSize * fat16.sectorCluster / 16;
-    //name[0] = 1;
     // Iterate through current root entrance entries
     for (int i = 0; i < fat16.rootEntries; i++) {
 
@@ -141,6 +142,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
             extensionLength = fatStrLen(extension);
             extension[extensionLength] = '\0';
 
+            // If the file has an extension, concatenate it
             if (extensionLength > 0) {
                 strcat(findFileName, ".");
                 strcat(findFileName, extension);
@@ -148,12 +150,7 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
 
             // Read fileAttributes to know what type of file is
             read(fd, &fileAttributes, sizeof(unsigned char));
-            int size1 = UTILS_sizeOf(findFileName);
-            int size2 = UTILS_sizeOf(fileName);
 
-            printf("Found: [%s] %d == [%s] %d FOUND? %d\n", findFileName, size1, fileName, size2,
-                   UTILS_compare(findFileName, fileName));
-            
             // Check if it's the file we were looking for
             if (UTILS_compare(findFileName, fileName) == 0) {
                 // Read file size
@@ -172,48 +169,29 @@ int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *
                 }
             } else {
                 if ((fileAttributes & 0x10) == 0x10) {
-                
+
                     if (strcmp(findFileName, "..") != 0 && strcmp(findFileName, ".") != 0) {
                         lseek(fd, 14, SEEK_CUR);
                         read(fd, &firstCluster, sizeof(uint16_t));
                         off_t pos = lseek(fd, 0, SEEK_CUR);
-                        
+
                         int filePosition = 0;
-                        if (firstCluster != 0){
-                            //unsigned int rootDirectory = ((fat16.reservedSectors * fat16.sectorSize) + (fat16.numberFats * fat16.sectorsFat * fat16.sectorSize));
+                        if (firstCluster != 0) {
+                            // Recursive search to finde inside the volume
+                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, firstCluster);
 
-                            //unsigned long fatFirstDataSectorSeek = fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + ((fat16.rootEntries*32)+(fat16.sectorSize-1)/fat16.sectorSize);
-                            //uint16_t RootDirSectors = ((fat16.rootEntries*32)+(fat16.sectorSize-1)/fat16.sectorSize);
-                            //uint16_t FirstDataSector  = fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + RootDirSectors;
-                            //uint16_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fatFirstDataSectorSeek;
-
-                            uint32_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) + (((fat16.rootEntries*32)+(fat16.sectorSize-1))/fat16.sectorSize);
-                            int n = firstCluster;
-                            printf("CLUSTERNUMBER: %d", n);
-                            //uint32_t firstSectorOfCluster = ( ( firstCluster - 2 ) * fat16.sectorCluster ) + fat16.reservedSectors + (fat16.numberFats * fat16.sectorsFat) ;
-                            firstSectorOfCluster = firstSectorOfCluster * fat16.sectorSize;
-
-                            printf("\n---------\n%s - CLUSTER: %d - %u\n---------\n\n",findFileName ,firstCluster,firstSectorOfCluster);
-
-                            printf("FirstDataSector: %d\n", firstSectorOfCluster);
-
-                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, firstSectorOfCluster);
                             // If returned a position different than 0, it means we found the file
                             if (filePosition != 0) {
                                 return filePosition;
                             }
-                            lseek(fd, pos, SEEK_SET);
-                            lseek(fd, 0, SEEK_CUR);
-                            lseek(fd, 4, SEEK_CUR);
-                        }else{
+                            lseek(fd, pos + 4, SEEK_SET);
+                        } else {
                             lseek(fd, 4, SEEK_CUR);
                         }
-                    
-                    }else{
+                    } else {
                         lseek(fd, 20, SEEK_CUR);
                     }
-                    
-                }else{
+                } else {
                     // As we already moved 12bits to read name/extension and attributes, we move 32-8 = 24 bits to the next entry
                     lseek(fd, 20, SEEK_CUR);
                 }

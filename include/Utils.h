@@ -10,7 +10,6 @@
 #include <string.h>
 #include "Types.h"
 
-#define NOT_FOUND -1
 #define FILE_TYPE 1
 #define DIR_TYPE 2
 #define UNDEFINED_TYPE 3

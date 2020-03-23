@@ -16,7 +16,7 @@ void printInfoExt2(Ext2Volume ext2) {
     printf(FREE_INODES, ext2.freeInodesCount);
 
     printf("BLOCK INFO\n");
-    printf(BLOCK_SIZE, pow(2, (10 + ext2.blockSize)));
+    printf(BLOCK_SIZE, ext2.blockSize);
     printf(RESERVED_BLOCK, ext2.reservedBlocksCount);
     printf(FREE_BLOCKS, ext2.freeBlockCount);
     printf(TOTAL_BLOCKS, ext2.blockCount);
@@ -71,38 +71,21 @@ Ext2Volume getInfoEXT2() {
 
     lseek(fd, 1024, SEEK_SET);
     read(fd, &ext2.inodesCount, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.blockCount, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.reservedBlocksCount, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.freeBlockCount, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.freeInodesCount, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.firstDataBlock, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.blockSize, sizeof(uint32_t));
+    ext2.blockSize =  1024 << ext2.blockSize;
 
     lseek(fd, 4, SEEK_CUR);
     read(fd, &ext2.blocksGroup, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.fragsGroup, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.inodesGroup, sizeof(uint32_t));
 
     lseek(fd, 1108, SEEK_SET);
     read(fd, &ext2.firstInode, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.inodeSize, sizeof(uint32_t));
 
     lseek(fd, 1144, SEEK_SET);
@@ -113,8 +96,6 @@ Ext2Volume getInfoEXT2() {
 
     lseek(fd, 1068, SEEK_SET);
     read(fd, &ext2.lastMounted, sizeof(uint32_t));
-
-    lseek(fd, 0, SEEK_CUR);
     read(fd, &ext2.lastWritten, sizeof(uint32_t));
 
     ext2.blockSize = 1024 << ext2.blockSize;       // 3.1.7 Documentation EX2

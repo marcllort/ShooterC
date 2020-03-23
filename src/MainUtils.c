@@ -28,7 +28,7 @@ void searchInFileSystem(char *filesystem, char *filename) {
         printf("Error, filesystem not found! %s\n", filesystem);
         return;
     }
-    
+
     if (isEXT2(fd)) {
         findFileInEXT2(filename);
     } else if (isFAT16(fd)) {

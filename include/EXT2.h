@@ -31,7 +31,7 @@ char *filename;
 #define FREE_INODES "Free Inodes: %d\n\n"
 
 // Block Info
-#define BLOCK_SIZE "Block Size: %.2f\n"
+#define BLOCK_SIZE "Block Size: %d\n"
 #define RESERVED_BLOCK "Reserved Blocks: %d\n"
 #define FREE_BLOCKS "Free Blocks: %d\n"
 #define TOTAL_BLOCKS "Total Blocks: %d\n"
