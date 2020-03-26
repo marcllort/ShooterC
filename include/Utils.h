@@ -16,7 +16,7 @@
 
 void strToUpper(char *string);
 
-int fatStrLen(char *string);
+int fatStrLen(unsigned char *string);
 
 int UTILS_compare(const char *str1, const char *str2);
 

@@ -69,6 +69,8 @@ FAT16Directory getInfoFAT16Directory(int fd, unsigned long filePosition) {
     read(fd, &fatDir.firstCluster, sizeof(uint16_t));
     read(fd, &fatDir.size, sizeof(uint32_t));
 
+    lseek(fd, filePosition, SEEK_SET);
+
     return fatDir;
 }
 
@@ -87,7 +89,7 @@ int findFileFAT16(char *fileName) {
         printf("Directory found!\n");
     } else if (fileType == UNDEFINED_TYPE) {
         FAT16Directory fatDir = getInfoFAT16Directory(fd, filePosition);
-        printf("Undefined type of file! Size: %d bytes\n", fatDir.size);
+        printf("Undefined type of file %s! Size: %d bytes\n", fatDir.name, fatDir.size);
     } else {
         printf("File not found!\n");
     }
@@ -99,7 +101,7 @@ unsigned long
 findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, unsigned char *rootDir,
                   uint32_t firstCluster) {
 
-    char name[10];                      // Found file name
+    unsigned char name[10];                      // Found file name
     int nameLength = 0;                 // Found file name length
     char extension[4];                  // Found file extension
     int extensionLength = 0;            // Found file extension length
@@ -142,6 +144,9 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
         strcat(findFileName, name);
 
         if (nameLength > 0) {
+            if (name[0] == 229) {
+                printf("FILE DELETED!\n");
+            }
             read(fd, extension, 3);
             extensionLength = fatStrLen(extension);
             extension[extensionLength] = '\0';
@@ -182,7 +187,7 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
                         unsigned long filePosition = 0;
                         if (firstCluster != 0) {
                             // Recursive search to find inside the volume
-                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, rootDir,firstCluster);
+                            filePosition = findFileFatVolume(fd, fat16, fileName, fileType, rootDir, firstCluster);
 
                             // If returned a position different than 0, it means we found the file
                             if (filePosition != 0) {
@@ -211,29 +216,38 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
     return 0;
 }
 
-int deleteFileFAT16(char *fileName) {
+int deleteFileFAT16(char *fileName, char *fileSystem) {
     FAT16Volume fat16 = getInfoFAT16();
 
     strToUpper(fileName);
     unsigned char fileType;
     unsigned char rootDir = 1;
+    int fdFAT = open(fileSystem, O_RDWR);
     unsigned long filePosition = findFileFatVolume(fd, fat16, fileName, &fileType, &rootDir, 0);
 
     // Only deletes on root directory
-    if (fileType == FILE_TYPE && rootDir == 1) {
-        deleteFileFAT16Volume(fd, filePosition);
-        printf("File %s has been deleted!\n", fileName);
-    } else if (fileType == UNDEFINED_TYPE && rootDir == 1) {
-        deleteFileFAT16Volume(fd, filePosition);
-        printf("File %s has been deleted!\n", fileName);
-    }else {
+    if ((fileType == FILE_TYPE || fileType == UNDEFINED_TYPE) && rootDir == 1) {
+        deleteFileFAT16Volume(fdFAT, filePosition);
+        if (findFileFatVolume(fd, fat16, fileName, &fileType, &rootDir, 0) > 0) {
+            printf("File %s NOT deleted...\n", fileName);
+        } else {
+            printf("File %s has been deleted!\n", fileName);
+        }
+    } else {
         printf("File not found!\n");
     }
+    close(fdFAT);
 
     return 0;
 }
 
-int deleteFileFAT16Volume(int fd, unsigned long filePosition) {
+int deleteFileFAT16Volume(int fdFAT, unsigned long filePosition) {
+
+    lseek(fdFAT, filePosition, SEEK_SET);
+    int i = 0;
+    for (i = 0; i < 32; i++) {
+        write(fdFAT, "", 1);
+    }
 
 }
 

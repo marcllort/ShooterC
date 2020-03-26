@@ -253,5 +253,12 @@ int deleteFileEXT2(char *fileName) {
 }
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
+    Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
+
+    Ext2Directory extEmpty;
+    memset(&extEmpty, 0, sizeof(extDir));
+
+    lseek(fd, filePosition, SEEK_SET);
+    write(fd, &extEmpty, sizeof(extDir));
 
 }

@@ -49,7 +49,7 @@ void deleteInFileSystem(char *filesystem, char *filename) {
     if (isEXT2(fd)) {
         deleteFileEXT2(filename);
     } else if (isFAT16(fd)) {
-        deleteFileFAT16(filename);
+        deleteFileFAT16(filename, filesystem);
     } else {
         printf("Filesystem not recognized! \n");
     }

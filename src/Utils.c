@@ -13,7 +13,7 @@ void strToUpper(char *string) {
     }
 }
 
-int fatStrLen(char *string) {
+int fatStrLen(unsigned char *string) {
     int size = strlen(string);
     int i = 0;
 
