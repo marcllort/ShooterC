@@ -14,4 +14,6 @@ void infoFileSystem(char *filesystem);
 
 void searchInFileSystem(char *filesystem, char *filename);
 
+void deleteInFileSystem(char *filesystem, char *filename);
+
 #endif //SHOOTERC_MAINUTILS_H

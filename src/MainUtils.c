@@ -30,7 +30,7 @@ void searchInFileSystem(char *filesystem, char *filename) {
     }
 
     if (isEXT2(fd)) {
-        findFileInEXT2(filename);
+        findFileEXT2(filename);
     } else if (isFAT16(fd)) {
         findFileFAT16(filename);
     } else {
@@ -39,6 +39,21 @@ void searchInFileSystem(char *filesystem, char *filename) {
     close(fd);
 }
 
+void deleteInFileSystem(char *filesystem, char *filename) {
+    int fd = open(filesystem, O_RDONLY);
+    if (fd < 0) {
+        printf("Error, filesystem not found! %s\n", filesystem);
+        return;
+    }
 
+    if (isEXT2(fd)) {
+        deleteFileEXT2(filename);
+    } else if (isFAT16(fd)) {
+        deleteFileFAT16(filename);
+    } else {
+        printf("Filesystem not recognized! \n");
+    }
+    close(fd);
+}
 
 

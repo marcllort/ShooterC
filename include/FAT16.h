@@ -39,11 +39,14 @@ void printInfoFat16(FAT16Volume fat16);
 
 FAT16Volume getInfoFAT16();
 
-FAT16Directory getInfoFAT16Directory(int fd, unsigned int filePosition);
+FAT16Directory getInfoFAT16Directory(int fd, unsigned long filePosition);
 
 int findFileFAT16(char *filename);
 
-int findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, uint32_t firstCluster);
+unsigned long findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, unsigned char *rootDir, uint32_t firstCluster);
 
+int deleteFileFAT16(char *fileName);
+
+int deleteFileFAT16Volume(int fd, unsigned long filePosition);
 
 #endif //SHOOTERC_FAT16_H

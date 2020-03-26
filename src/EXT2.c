@@ -77,7 +77,7 @@ Ext2Volume getInfoEXT2() {
     read(fd, &ext2.freeInodesCount, sizeof(uint32_t));
     read(fd, &ext2.firstDataBlock, sizeof(uint32_t));
     read(fd, &ext2.blockSize, sizeof(uint32_t));
-    ext2.blockSize =  1024 << ext2.blockSize;
+    ext2.blockSize = 1024 << ext2.blockSize;
 
     lseek(fd, 4, SEEK_CUR);
     read(fd, &ext2.blocksGroup, sizeof(uint32_t));
@@ -103,7 +103,7 @@ Ext2Volume getInfoEXT2() {
     return ext2;
 }
 
-Ext2Directory getInfoEXT2Directory(int fd, unsigned int filePosition) {
+Ext2Directory getInfoEXT2Directory(int fd, unsigned long filePosition) {
     Ext2Directory extDir;
     lseek(fd, filePosition, SEEK_SET);
     memset(extDir.fileName, 0, 255);            // Clear fileName var
@@ -154,11 +154,13 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
     return inodeEntry;
 }
 
-int findFileInEXT2(char *fileName) {
+int findFileEXT2(char *fileName) {
     Ext2Volume ext2 = getInfoEXT2();
     filename = fileName;
     unsigned char fileType;
-    int filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, 2);
+    unsigned char rootDir = 1;
+    unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
+
     if (fileType == FILE_TYPE) {
         Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
         InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
@@ -173,7 +175,9 @@ int findFileInEXT2(char *fileName) {
 }
 
 
-unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber) {
+unsigned long
+findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, unsigned char *rootDir,
+                  int inodeNumber) {
 
     unsigned long filePosition = 0;
     unsigned long offset = 0;
@@ -207,9 +211,10 @@ unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigne
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
+                    *rootDir = 0;
                     if (ext2Dir.fileType == DIR_TYPE) {
                         if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
-                            filePosition = findFileExtVolume(fd, ext2, fileName, fileType, ext2Dir.inode);
+                            filePosition = findFileExtVolume(fd, ext2, fileName, fileType, rootDir, ext2Dir.inode);
                             // If returned a position different than 0, it means we found the file
                             if (filePosition != 0) {
                                 return filePosition;
@@ -224,4 +229,29 @@ unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigne
     }
 
     return filePosition;
+}
+
+int deleteFileEXT2(char *fileName) {
+    Ext2Volume ext2 = getInfoEXT2();
+    filename = fileName;
+    unsigned char fileType;
+    unsigned char rootDir = 1;
+    unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
+
+    // Only deletes on root directory
+    if (fileType == FILE_TYPE && rootDir == 1) {
+        deleteFileEXT2Volume(fd, filePosition);
+        printf("File %s has been deleted!\n", fileName);
+    } else if (fileType == UNDEFINED_TYPE && rootDir == 1) {
+        deleteFileEXT2Volume(fd, filePosition);
+        printf("File %s has been deleted!\n", fileName);
+    }else {
+        printf("File not found!\n");
+    }
+
+    return 0;
+}
+
+int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
+
 }

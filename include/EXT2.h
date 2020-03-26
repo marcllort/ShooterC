@@ -54,12 +54,18 @@ int isEXT2(int fileDescriptor);
 
 Ext2Volume getInfoEXT2();
 
-Ext2Directory getInfoEXT2Directory(int fd, unsigned int filePosition);
+Ext2Directory getInfoEXT2Directory(int fd, unsigned long filePosition);
 
 InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum);
 
-int findFileInEXT2(char *fileName);
+int findFileEXT2(char *fileName);
 
-unsigned long findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, int inodeNumber);
+unsigned long
+findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, unsigned char *rootDir,
+                  int inodeNumber);
+
+int deleteFileEXT2(char *fileName);
+
+int deleteFileEXT2Volume(int fd, unsigned long filePosition);
 
 #endif //SHOOTERC_EXT2_H

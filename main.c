@@ -17,6 +17,12 @@ int main(int argc, char *argv[]) {
             } else {
                 searchInFileSystem(argv[2], argv[3]);
             }
+        } else if (strcmp(argv[1], "/delete") == 0) {
+            if (argc != 4) {
+                printf("Incorrect number of parameters for the Find function! \n");
+            } else {
+                deleteInFileSystem(argv[2], argv[3]);
+            }
         } else {
             printf("Functionality not supported yet! \n");
         }
