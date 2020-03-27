@@ -64,7 +64,7 @@ unsigned long
 findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, unsigned char *rootDir,
                   int inodeNumber);
 
-int deleteFileEXT2(char *fileName);
+int deleteFileEXT2(char *fileName, char *fileSystem);
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition);
 

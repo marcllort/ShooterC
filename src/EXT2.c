@@ -100,6 +100,8 @@ Ext2Volume getInfoEXT2() {
 
     ext2.blockSize = 1024 << ext2.blockSize;       // 3.1.7 Documentation EX2
 
+    lseek(fd, 1024, SEEK_SET);
+
     return ext2;
 }
 
@@ -161,8 +163,10 @@ int findFileEXT2(char *fileName) {
     unsigned char rootDir = 1;
     unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
 
+
     if (fileType == FILE_TYPE) {
         Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
+        printf("FILE POSITION: %lu -- INODE: %d\n", filePosition,extDir.inode);
         InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
         printf("File found! Size: %lu bytes\n", extInode.i_size);
     } else if (fileType == DIR_TYPE) {
@@ -211,7 +215,7 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
-                    *rootDir = 0;
+                    //*rootDir = 0;
                     if (ext2Dir.fileType == DIR_TYPE) {
                         if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
                             filePosition = findFileExtVolume(fd, ext2, fileName, fileType, rootDir, ext2Dir.inode);
@@ -231,34 +235,37 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
     return filePosition;
 }
 
-int deleteFileEXT2(char *fileName) {
+int deleteFileEXT2(char *fileName, char *fileSystem) {
     Ext2Volume ext2 = getInfoEXT2();
     filename = fileName;
     unsigned char fileType;
     unsigned char rootDir = 1;
+    int fdEXT = open(fileSystem, O_RDWR);
     unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
 
     // Only deletes on root directory
-    if (fileType == FILE_TYPE && rootDir == 1) {
-        deleteFileEXT2Volume(fd, filePosition);
-        printf("File %s has been deleted!\n", fileName);
-    } else if (fileType == UNDEFINED_TYPE && rootDir == 1) {
-        deleteFileEXT2Volume(fd, filePosition);
-        printf("File %s has been deleted!\n", fileName);
-    }else {
-        printf("File not found!\n");
+    if ((fileType == FILE_TYPE || fileType == UNDEFINED_TYPE) && rootDir == 1) {
+        deleteFileEXT2Volume(fdEXT, filePosition);
+        if (findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 0) > 0) {
+            printf("File %s NOT deleted...\n", fileName);
+        } else {
+            printf("File %s has been deleted!\n", fileName);
+        }
+    } else {
+        printf("Unsupported delete!\n");
     }
 
     return 0;
 }
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
-    Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
 
-    Ext2Directory extEmpty;
-    memset(&extEmpty, 0, sizeof(extDir));
+    Ext2Directory ext2Dir = getInfoEXT2Directory(fd, filePosition);
+    ext2Dir.inode = 0;
 
     lseek(fd, filePosition, SEEK_SET);
-    write(fd, &extEmpty, sizeof(extDir));
+    write(fd, &ext2Dir, sizeof(ext2Dir));
+
+    return 0;
 
 }

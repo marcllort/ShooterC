@@ -234,7 +234,7 @@ int deleteFileFAT16(char *fileName, char *fileSystem) {
             printf("File %s has been deleted!\n", fileName);
         }
     } else {
-        printf("File not found!\n");
+        printf("Unsupported delete!\n");
     }
     close(fdFAT);
 

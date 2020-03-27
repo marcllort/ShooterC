@@ -47,7 +47,7 @@ void deleteInFileSystem(char *filesystem, char *filename) {
     }
 
     if (isEXT2(fd)) {
-        deleteFileEXT2(filename);
+        deleteFileEXT2(filename, filesystem);
     } else if (isFAT16(fd)) {
         deleteFileFAT16(filename, filesystem);
     } else {
