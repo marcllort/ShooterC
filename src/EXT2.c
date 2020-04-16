@@ -69,6 +69,7 @@ int isEXT2(int fileDescriptor) {
 Ext2Volume getInfoEXT2() {
     Ext2Volume ext2;
 
+    // Move to info ext2 start position
     lseek(fd, 1024, SEEK_SET);
     read(fd, &ext2.inodesCount, sizeof(uint32_t));
     read(fd, &ext2.blockCount, sizeof(uint32_t));
@@ -79,27 +80,28 @@ Ext2Volume getInfoEXT2() {
     read(fd, &ext2.blockSize, sizeof(uint32_t));
     ext2.blockSize = 1024 << ext2.blockSize;
 
+    // Jump to blocksgroup position
     lseek(fd, 4, SEEK_CUR);
     read(fd, &ext2.blocksGroup, sizeof(uint32_t));
     read(fd, &ext2.fragsGroup, sizeof(uint32_t));
     read(fd, &ext2.inodesGroup, sizeof(uint32_t));
 
+    // Move to firstNode info position
     lseek(fd, 1108, SEEK_SET);
     read(fd, &ext2.firstInode, sizeof(uint32_t));
     read(fd, &ext2.inodeSize, sizeof(uint32_t));
-
+    // Move to volumeName info position
     lseek(fd, 1144, SEEK_SET);
     read(fd, &ext2.volumeName, sizeof(uint32_t));
-
+    // Move to lastCheck info position
     lseek(fd, 1088, SEEK_SET);
     read(fd, &ext2.lastCheck, sizeof(uint32_t));
-
+    // Move to lastMounted info position
     lseek(fd, 1068, SEEK_SET);
     read(fd, &ext2.lastMounted, sizeof(uint32_t));
     read(fd, &ext2.lastWritten, sizeof(uint32_t));
 
-    ext2.blockSize = 1024 << ext2.blockSize;       // 3.1.7 Documentation EX2
-
+    // Reset position
     lseek(fd, 1024, SEEK_SET);
 
     return ext2;
@@ -133,16 +135,19 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
         groupDescriptor = 2048;
     }
 
+    // Jump to start of inode table position
     lseek(fd, groupDescriptor + 8, SEEK_SET);
     read(fd, &inodeTablePosition, 4);
 
     inodeSeekPosition = inodeTablePosition * ext2.blockSize;
     seekPosition = inodeSeekPosition + (inodeNum - 1) * ext2.inodeSize;
 
+    // Jump to start of inode i_size table position
     seekPosition += 4;
     lseek(fd, seekPosition, SEEK_SET);
     read(fd, &inodeEntry.i_size, 4);
 
+    // Jump to start of inode table position
     seekPosition += 36;
     lseek(fd, seekPosition, SEEK_SET);
 
@@ -166,7 +171,7 @@ int findFileEXT2(char *fileName) {
 
     if (fileType == FILE_TYPE) {
         Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
-        printf("FILE POSITION: %lu -- INODE: %d\n", filePosition,extDir.inode);
+        printf("FILE POSITION: %lu -- INODE: %d\n", filePosition, extDir.inode);
         InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
         printf("File found! Size: %lu bytes\n", extInode.i_size);
     } else if (fileType == DIR_TYPE) {
@@ -259,12 +264,55 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
 }
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
-
+    Ext2Volume ext2 = getInfoEXT2();
     Ext2Directory ext2Dir = getInfoEXT2Directory(fd, filePosition);
-    ext2Dir.inode = 0;
+
+    unsigned long offset = 0;
+    unsigned long actualBlockSize = 0;
+    InodeEntry inode = getInodeData(fd, ext2, ext2Dir.inode);
+    InodeEntry parentInode = getInodeData(fd, ext2, 2);
+
+    inode.i_dtime = (unsigned int) time(NULL);
+    inode.i_links_count--;
+
+    Ext2Directory curDir, prevDir;
+
+    ext2Dir.fileName[0] = '\0';
 
     lseek(fd, filePosition, SEEK_SET);
     write(fd, &ext2Dir, sizeof(ext2Dir));
+
+    /*int i;
+    int block;
+    for (i=0; i < 12; i++){
+        block = parentInode.i_block[i];
+        if (block != 0){
+            while (actualBlockSize < ext2.blockSize) {
+                curDir = getInfoEXT2Directory(fd, offset);
+                // Check if name is the same as the one we are looking for
+                if (curDir.inode != 0) {
+                    //printf("FOUND: %s -- OG: %s -- FOUND: %d\n", ext2Dir.fileName, filename, UTILS_compare(ext2Dir.fileName, filename));
+                    if (UTILS_compare(curDir.fileName, filename) == 0) {
+                        // Return the offset, so we can later find easily the size
+                        if (curDir.fileType == FILE_TYPE) {
+                            /*for (int j=0; j<15; j++){
+                                if (inode.i_block[j] != 0){
+                                    set_bitmap_zero(block_bitmap, inode->i_block[j]);
+                                }
+                            }
+                            prevDir.recordLength += curDir.recordLength;
+                        }
+                    }
+                }
+                prevDir = getInfoEXT2Directory(fd, offset);
+                offset += curDir.recordLength;
+                actualBlockSize += curDir.recordLength;
+            }
+
+        }else{
+            break;
+        }
+    }*/
 
     return 0;
 
