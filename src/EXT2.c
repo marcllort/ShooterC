@@ -251,7 +251,7 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
     // Only deletes on root directory
     if ((fileType == FILE_TYPE || fileType == UNDEFINED_TYPE) && rootDir == 1) {
         deleteFileEXT2Volume(fdEXT, filePosition);
-        if (findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 0) > 0) {
+        if (findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2) > 0) {
             printf("File %s NOT deleted...\n", fileName);
         } else {
             printf("File %s has been deleted!\n", fileName);
@@ -264,56 +264,31 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
 }
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
-    Ext2Volume ext2 = getInfoEXT2();
-    Ext2Directory ext2Dir = getInfoEXT2Directory(fd, filePosition);
+    unsigned char *disk;
+    struct ext2_group_desc *gd;
 
-    unsigned long offset = 0;
-    unsigned long actualBlockSize = 0;
-    InodeEntry inode = getInodeData(fd, ext2, ext2Dir.inode);
-    InodeEntry parentInode = getInodeData(fd, ext2, 2);
+    disk = mmap(NULL, 128 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    gd = (struct ext2_group_desc *)(disk + 2 * 1024);
+
+    Ext2Volume ext2 = getInfoEXT2();
+    Ext2Directory dir = getInfoEXT2Directory(fd, filePosition);
+
+    InodeEntry inode = getInodeData(fd, ext2, dir.inode);
+
+    inode.i_links_count = inode.i_links_count - 1;
+    inode.i_size = 0;
+
+    if (!inode.i_links_count){
+        //delete the file
+        int block;
+        for (block = 0; block < 11; block++){
+            gd->bg_block_bitmap &= ((1 << inode.i_block[block]) >> (128 - inode.i_block[block]));
+        }
+        gd->bg_inode_bitmap &= ((0 << dir.inode) >> (32 - dir.inode));
+    }
 
     inode.i_dtime = (unsigned int) time(NULL);
-    inode.i_links_count--;
-
-    Ext2Directory curDir, prevDir;
-
-    ext2Dir.fileName[0] = '\0';
-
-    lseek(fd, filePosition, SEEK_SET);
-    write(fd, &ext2Dir, sizeof(ext2Dir));
-
-    /*int i;
-    int block;
-    for (i=0; i < 12; i++){
-        block = parentInode.i_block[i];
-        if (block != 0){
-            while (actualBlockSize < ext2.blockSize) {
-                curDir = getInfoEXT2Directory(fd, offset);
-                // Check if name is the same as the one we are looking for
-                if (curDir.inode != 0) {
-                    //printf("FOUND: %s -- OG: %s -- FOUND: %d\n", ext2Dir.fileName, filename, UTILS_compare(ext2Dir.fileName, filename));
-                    if (UTILS_compare(curDir.fileName, filename) == 0) {
-                        // Return the offset, so we can later find easily the size
-                        if (curDir.fileType == FILE_TYPE) {
-                            /*for (int j=0; j<15; j++){
-                                if (inode.i_block[j] != 0){
-                                    set_bitmap_zero(block_bitmap, inode->i_block[j]);
-                                }
-                            }
-                            prevDir.recordLength += curDir.recordLength;
-                        }
-                    }
-                }
-                prevDir = getInfoEXT2Directory(fd, offset);
-                offset += curDir.recordLength;
-                actualBlockSize += curDir.recordLength;
-            }
-
-        }else{
-            break;
-        }
-    }*/
-
+    printf("DONE!\n");
     return 0;
 
 }

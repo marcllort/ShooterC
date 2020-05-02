@@ -31,6 +31,18 @@ typedef struct {
     uint32_t lastWritten;
 } Ext2Volume;
 
+struct ext2_group_desc
+{
+    unsigned int   bg_block_bitmap;      /* Blocks bitmap block */
+    unsigned int   bg_inode_bitmap;      /* Inodes bitmap block */
+    unsigned int   bg_inode_table;       /* Inodes table block */
+    unsigned short bg_free_blocks_count; /* Free blocks count */
+    unsigned short bg_free_inodes_count; /* Free inodes count */
+    unsigned short bg_used_dirs_count;   /* Directories count */
+    unsigned short bg_pad;
+    unsigned int   bg_reserved[3];
+};
+
 typedef struct {
     uint32_t inode;
     uint16_t recordLength;
