@@ -266,28 +266,28 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
     unsigned char *disk;
     struct ext2_group_desc *gd;
-
+    struct ext2_super_block *sb;
+    sb = (struct ext2_super_block *)(disk + 1024);
     disk = mmap(NULL, 128 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     gd = (struct ext2_group_desc *)(disk + 2 * 1024);
+
 
     Ext2Volume ext2 = getInfoEXT2();
     Ext2Directory dir = getInfoEXT2Directory(fd, filePosition);
 
-    InodeEntry inode = getInodeData(fd, ext2, dir.inode);
+    struct ext2_inode *curr_inode = (struct ext2_inode *)(disk + (1024 * gd->bg_inode_table) + (sb->s_inode_size * (dir->inode - 1)));
 
-    inode.i_links_count = inode.i_links_count - 1;
-    inode.i_size = 0;
-
-    if (!inode.i_links_count){
+    curr_inode->i_links_count--;
+    if (!curr_inode->i_links_count){
         //delete the file
         int block;
         for (block = 0; block < 11; block++){
-            gd->bg_block_bitmap &= ((1 << inode.i_block[block]) >> (128 - inode.i_block[block]));
+            gd->bg_block_bitmap &= ((1 << curr_inode->i_block[block]) >> (128 - curr_inode->i_block[block]));
         }
         gd->bg_inode_bitmap &= ((0 << dir.inode) >> (32 - dir.inode));
     }
-
-    inode.i_dtime = (unsigned int) time(NULL);
+    //set dtime
+    return 0;
     printf("DONE!\n");
     return 0;
 
