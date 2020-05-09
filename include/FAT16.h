@@ -43,7 +43,9 @@ FAT16Directory getInfoFAT16Directory(int fd, unsigned long filePosition);
 
 int findFileFAT16(char *filename);
 
-unsigned long findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, unsigned char *rootDir, uint32_t firstCluster);
+unsigned long
+findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *fileType, unsigned char *rootDir,
+                  uint32_t firstCluster);
 
 int deleteFileFAT16(char *fileName, char *fileSystem);
 
