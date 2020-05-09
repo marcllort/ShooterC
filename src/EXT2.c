@@ -168,7 +168,6 @@ int findFileEXT2(char *fileName) {
     unsigned char rootDir = 1;
     unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
 
-
     if (fileType == FILE_TYPE) {
         Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
         printf("FILE POSITION: %lu -- INODE: %d\n", filePosition, extDir.inode);
@@ -208,7 +207,6 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
             ext2Dir = getInfoEXT2Directory(fd, offset);
             // Check if name is the same as the one we are looking for
             if (ext2Dir.inode != 0) {
-                //printf("FOUND: %s -- OG: %s -- FOUND: %d\n", ext2Dir.fileName, filename, UTILS_compare(ext2Dir.fileName, filename));
                 if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == FILE_TYPE) {
@@ -220,7 +218,6 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
-                    //*rootDir = 0;
                     if (ext2Dir.fileType == DIR_TYPE) {
                         if (strcmp(ext2Dir.fileName, "..") != 0 && strcmp(ext2Dir.fileName, ".") != 0) {
                             filePosition = findFileExtVolume(fd, ext2, fileName, fileType, rootDir, ext2Dir.inode);
@@ -251,11 +248,7 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
     // Only deletes on root directory
     if ((fileType == FILE_TYPE || fileType == UNDEFINED_TYPE) && rootDir == 1) {
         deleteFileEXT2Volume(fdEXT, filePosition);
-        if (findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2) > 0) {
-            printf("File %s NOT deleted...\n", fileName);
-        } else {
-            printf("File %s has been deleted!\n", fileName);
-        }
+        printf("File %s has been deleted!\n", fileName);
     } else {
         printf("Unsupported delete!\n");
     }
@@ -265,132 +258,18 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
 
-    Ext2Volume ext2 = getInfoEXT2();
-    Ext2Directory dir = getInfoEXT2Directory(fd, filePosition);
-
-    lseek(fd, filePosition, SEEK_SET);
-    //InodeEntry inode = getInodeData(fd, ext2, inodeNumber);
-
-    int i;
-
-    Ext2Directory ext_directory;
-
-    ext_directory.inode = 0;
-    bzero(ext_directory.fileName, sizeof(unsigned int));
-
     lseek(fd, filePosition, SEEK_SET);
 
-    write(fd, &ext_directory.inode, sizeof(unsigned int));
-    read(fd, &ext_directory.recordLength, sizeof(unsigned short int));
-    read(fd, &ext_directory.nameLength, sizeof(unsigned char));
-    read(fd, &ext_directory.fileType, sizeof(unsigned char));
-    write(fd, &ext_directory.fileName, ext_directory.nameLength);
-
-    // Tornem a la posicio on estavem
+    Ext2Directory newDir;
+    newDir.inode = 0;
+    bzero(newDir.fileName, sizeof(unsigned char));
     lseek(fd, filePosition, SEEK_SET);
 
-    InodeEntry inode = getInodeData(fd, ext2, dir.inode);
-
-    inode.i_size = 0;
-    inode.i_links_count = 0;
-    int offset = filePosition;
-    offset += 4;
-    lseek(fd, offset, SEEK_SET);
-    write(fd, &inode.i_size, 4);
-    offset += 4;
-
-    offset += 18;
-    lseek(fd, offset, SEEK_SET);
-    write(fd, &inode.i_links_count, 2);
-    offset += 2;
-
-    offset += 12;
-    for(i = 0; i < 15; i++) {
-
-        lseek(fd, offset, SEEK_SET);
-        inode.i_block[i] = 0;
-        write(fd, &inode.i_block[i], sizeof(unsigned int));
-        offset += 4;
-    }   //for
-
+    write(fd, &newDir.inode, sizeof(uint32_t));
+    read(fd, &newDir.recordLength, sizeof(uint16_t));
+    read(fd, &newDir.nameLength, sizeof(unsigned char));
+    read(fd, &newDir.fileType, sizeof(unsigned char));
+    write(fd, &newDir.fileName, newDir.nameLength);
 
     return 0;
 }
-
-/*void EXTDelete(int fd, EXT ext, int dir_entry, unsigned char* filetype){
-
-    unsigned long offset;
-    int removed;
-    int n;
-
-    EXTDirectory extDirectory;
-    INODE inode;
-
-    switch(*filetype){
-        case NOTFOUND:
-            printFileNotFound();
-            break;
-        case FILE_TYPE:
-
-            extDirectory = EXTDirectoryData(fd, dir_entry);
-            offset = seekPositionINODE(fd, ext, extDirectory.inode);
-
-            lseek(fd, offset, SEEK_SET);
-            inode = INODEData(fd, offset);
-
-            removed = UpdateEXT(fd, dir_entry, inode, offset);
-
-            //extDirectory = EXTDirectoryData(fd, dir_entry);
-            printRemoved(removed, extDirectory.file_name);
-
-            break;
-        case DIR_TYPE:
-            printDirInfo();
-            break;
-    }   //switch
-}
-
-int UpdateEXT(int fd, unsigned long data_block_pos, INODE inode, unsigned long offset){
-
-    int i;
-
-    EXTDirectory ext_directory;
-
-    ext_directory.inode = 0;
-    bzero(ext_directory.file_name, SIZE);
-
-    lseek(fd, data_block_pos, SEEK_SET);
-
-    write(fd, &ext_directory.inode, sizeof(unsigned int));
-    read(fd, &ext_directory.rec_len, sizeof(unsigned short int));
-    read(fd, &ext_directory.name_len, sizeof(unsigned char));
-    read(fd, &ext_directory.file_type, sizeof(unsigned char));
-    write(fd, &ext_directory.file_name, ext_directory.name_len);
-
-    // Tornem a la posicio on estavem
-    lseek(fd, data_block_pos, SEEK_SET);
-
-    inode.i_size = 0;
-    inode.i_links_count = 0;
-
-    offset += 4;
-    lseek(fd, offset, SEEK_SET);
-    write(fd, &inode.i_size, 4);
-    offset += 4;
-
-    offset += 18;
-    lseek(fd, offset, SEEK_SET);
-    write(fd, &inode.i_links_count, 2);
-    offset += 2;
-
-    offset += 12;
-    for(i = 0; i < 15; i++) {
-
-        lseek(fd, offset, SEEK_SET);
-        inode.i_block[i] = 0;
-        write(fd, &inode.i_block[i], sizeof(unsigned int));
-        offset += 4;
-    }   //for
-
-    return 0;
-}*/

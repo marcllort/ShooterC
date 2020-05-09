@@ -19,7 +19,6 @@
 #include <time.h>
 #include "Types.h"
 #include "Utils.h"
-#include <sys/mman.h>
 
 int fd;
 char *filename;
