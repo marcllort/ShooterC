@@ -264,31 +264,133 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
 }
 
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
-    unsigned char *disk;
-    struct ext2_group_desc *gd;
-    struct ext2_super_block *sb;
-    sb = (struct ext2_super_block *)(disk + 1024);
-    disk = mmap(NULL, 128 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    gd = (struct ext2_group_desc *)(disk + 2 * 1024);
-
 
     Ext2Volume ext2 = getInfoEXT2();
     Ext2Directory dir = getInfoEXT2Directory(fd, filePosition);
 
-    struct ext2_inode *curr_inode = (struct ext2_inode *)(disk + (1024 * gd->bg_inode_table) + (sb->s_inode_size * (dir->inode - 1)));
+    lseek(fd, filePosition, SEEK_SET);
+    //InodeEntry inode = getInodeData(fd, ext2, inodeNumber);
 
-    curr_inode->i_links_count--;
-    if (!curr_inode->i_links_count){
-        //delete the file
-        int block;
-        for (block = 0; block < 11; block++){
-            gd->bg_block_bitmap &= ((1 << curr_inode->i_block[block]) >> (128 - curr_inode->i_block[block]));
-        }
-        gd->bg_inode_bitmap &= ((0 << dir.inode) >> (32 - dir.inode));
-    }
-    //set dtime
-    return 0;
-    printf("DONE!\n");
-    return 0;
+    int i;
 
+    Ext2Directory ext_directory;
+
+    ext_directory.inode = 0;
+    bzero(ext_directory.fileName, sizeof(unsigned int));
+
+    lseek(fd, filePosition, SEEK_SET);
+
+    write(fd, &ext_directory.inode, sizeof(unsigned int));
+    read(fd, &ext_directory.recordLength, sizeof(unsigned short int));
+    read(fd, &ext_directory.nameLength, sizeof(unsigned char));
+    read(fd, &ext_directory.fileType, sizeof(unsigned char));
+    write(fd, &ext_directory.fileName, ext_directory.nameLength);
+
+    // Tornem a la posicio on estavem
+    lseek(fd, filePosition, SEEK_SET);
+
+    InodeEntry inode = getInodeData(fd, ext2, dir.inode);
+
+    inode.i_size = 0;
+    inode.i_links_count = 0;
+    int offset = filePosition;
+    offset += 4;
+    lseek(fd, offset, SEEK_SET);
+    write(fd, &inode.i_size, 4);
+    offset += 4;
+
+    offset += 18;
+    lseek(fd, offset, SEEK_SET);
+    write(fd, &inode.i_links_count, 2);
+    offset += 2;
+
+    offset += 12;
+    for(i = 0; i < 15; i++) {
+
+        lseek(fd, offset, SEEK_SET);
+        inode.i_block[i] = 0;
+        write(fd, &inode.i_block[i], sizeof(unsigned int));
+        offset += 4;
+    }   //for
+
+
+    return 0;
 }
+
+/*void EXTDelete(int fd, EXT ext, int dir_entry, unsigned char* filetype){
+
+    unsigned long offset;
+    int removed;
+    int n;
+
+    EXTDirectory extDirectory;
+    INODE inode;
+
+    switch(*filetype){
+        case NOTFOUND:
+            printFileNotFound();
+            break;
+        case FILE_TYPE:
+
+            extDirectory = EXTDirectoryData(fd, dir_entry);
+            offset = seekPositionINODE(fd, ext, extDirectory.inode);
+
+            lseek(fd, offset, SEEK_SET);
+            inode = INODEData(fd, offset);
+
+            removed = UpdateEXT(fd, dir_entry, inode, offset);
+
+            //extDirectory = EXTDirectoryData(fd, dir_entry);
+            printRemoved(removed, extDirectory.file_name);
+
+            break;
+        case DIR_TYPE:
+            printDirInfo();
+            break;
+    }   //switch
+}
+
+int UpdateEXT(int fd, unsigned long data_block_pos, INODE inode, unsigned long offset){
+
+    int i;
+
+    EXTDirectory ext_directory;
+
+    ext_directory.inode = 0;
+    bzero(ext_directory.file_name, SIZE);
+
+    lseek(fd, data_block_pos, SEEK_SET);
+
+    write(fd, &ext_directory.inode, sizeof(unsigned int));
+    read(fd, &ext_directory.rec_len, sizeof(unsigned short int));
+    read(fd, &ext_directory.name_len, sizeof(unsigned char));
+    read(fd, &ext_directory.file_type, sizeof(unsigned char));
+    write(fd, &ext_directory.file_name, ext_directory.name_len);
+
+    // Tornem a la posicio on estavem
+    lseek(fd, data_block_pos, SEEK_SET);
+
+    inode.i_size = 0;
+    inode.i_links_count = 0;
+
+    offset += 4;
+    lseek(fd, offset, SEEK_SET);
+    write(fd, &inode.i_size, 4);
+    offset += 4;
+
+    offset += 18;
+    lseek(fd, offset, SEEK_SET);
+    write(fd, &inode.i_links_count, 2);
+    offset += 2;
+
+    offset += 12;
+    for(i = 0; i < 15; i++) {
+
+        lseek(fd, offset, SEEK_SET);
+        inode.i_block[i] = 0;
+        write(fd, &inode.i_block[i], sizeof(unsigned int));
+        offset += 4;
+    }   //for
+
+    return 0;
+}*/
