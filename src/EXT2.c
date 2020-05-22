@@ -151,6 +151,7 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
     seekPosition += 36;
     lseek(fd, seekPosition, SEEK_SET);
 
+
     for (int i = 0; i < 15; i++) {
         if (inodeNum == 2) {
             lseek(fd, ((i * 4) + seekPosition), SEEK_SET);
@@ -185,6 +186,49 @@ int findFileEXT2(char *fileName) {
     return 0;
 }
 
+InodeEntry getInode(Ext2Volume ext2, unsigned int inodeNum) {
+    int address = 0;
+    unsigned int inodeTable, position;
+    InodeEntry inodeEntry;
+
+    if (inodeNum != 2) {
+        address = ((inodeNum - 1) / ext2.inodesGroup) * ext2.blocksGroup * ext2.blockSize;
+    }
+
+    lseek(fd, 2048 + address + 8, SEEK_SET);
+    read(fd, &inodeTable, 4);
+
+    position = (inodeNum - 1) % ext2.inodesGroup;
+    unsigned int seekPosition;
+
+    if (inodeNum == 2) {
+        seekPosition = inodeTable * ext2.blockSize + ext2.inodeSize;
+    } else {
+        seekPosition = inodeTable * ext2.blockSize + (ext2.inodeSize * position) + address;
+    }
+
+    // Jump to start of inode i_size table position
+    seekPosition += 4;
+    lseek(fd, seekPosition, SEEK_SET);
+    read(fd, &inodeEntry.i_size, 4);
+
+    // Jump to start of inode table position
+    seekPosition += 36;
+    lseek(fd, seekPosition, SEEK_SET);
+
+
+    for (int i = 0; i < 15; i++) {
+        if (inodeNum == 2) {
+            lseek(fd, ((i * 4) + seekPosition), SEEK_SET);
+        } else {
+            lseek(fd, ((i * ext2.blockSize) + seekPosition), SEEK_SET);
+        }
+        inodeEntry.i_block[i] = 0;
+        read(fd, &inodeEntry.i_block[i], sizeof(uint32_t));
+    }
+
+    return inodeEntry;
+}
 
 unsigned long
 findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileType, unsigned char *rootDir,
@@ -192,30 +236,29 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
 
     unsigned long filePosition = 0;
     unsigned long offset = 0;
-    unsigned long actualBlockSize = 0;
+    unsigned int blockAddress;
+
+    InodeEntry inodeEntry = getInode(ext2, inodeNumber);
 
     Ext2Directory ext2Dir;
     InodeEntry inode = getInodeData(fd, ext2, inodeNumber);
 
     for (int blockPointer = 0; blockPointer < 12; blockPointer++) {
 
-        actualBlockSize = 0;
         if (inode.i_block[blockPointer] != 0) {
+            blockAddress = inodeEntry.i_block[blockPointer] * ext2.blockSize;
 
-            offset = inode.i_block[blockPointer] * ext2.blockSize;
-            int access = 0;
-            while (access < ext2.inodeSize) {
-                ext2Dir = getInfoEXT2Directory(fd, offset);
+            while (offset < ext2.inodeSize) {
+                ext2Dir = getInfoEXT2Directory(fd, blockAddress);
 
-                //printf("FILE: %s\n", ext2Dir.fileName);
                 if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == FILE_TYPE) {
                         *fileType = FILE_TYPE;
-                        return offset;
+                        return blockAddress;
                     } else if (ext2Dir.fileType == DIR_TYPE) {
                         *fileType = DIR_TYPE;
-                        return offset;
+                        return blockAddress;
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
@@ -230,20 +273,12 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
                     }
                 }
 
-
-                if (ext2Dir.recordLength == 0) {
-                    offset += 1;
-                    actualBlockSize += 1;
-                    access += ext2Dir.recordLength;
-                } else {
-                    offset += ext2Dir.recordLength;
-                    actualBlockSize += ext2Dir.recordLength;
-                    access += ext2Dir.recordLength;
-                }
+                blockAddress += ext2Dir.recordLength;
+                offset += ext2Dir.recordLength;
             }
         }
-    }
 
+    }
     return filePosition;
 }
 

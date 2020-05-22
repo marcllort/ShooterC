@@ -56,7 +56,9 @@ Ext2Volume getInfoEXT2();
 
 Ext2Directory getInfoEXT2Directory(int fd, unsigned long filePosition);
 
-InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum);
+InodeEntry getInodeData(int inode, Ext2Volume ext2, unsigned int inodeNum);
+
+InodeEntry getInode(Ext2Volume ext2, unsigned int inodeNum);
 
 int findFileEXT2(char *fileName);
 
