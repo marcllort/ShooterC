@@ -188,7 +188,7 @@ int findFileEXT2(char *fileName) {
 
 InodeEntry getInode(Ext2Volume ext2, unsigned int inodeNum) {
     int address = 0;
-    unsigned int inodeTable, position;
+    unsigned int inodeTable, inodeSeekPosition;
     InodeEntry inodeEntry;
 
     if (inodeNum != 2) {
@@ -198,13 +198,13 @@ InodeEntry getInode(Ext2Volume ext2, unsigned int inodeNum) {
     lseek(fd, 2048 + address + 8, SEEK_SET);
     read(fd, &inodeTable, 4);
 
-    position = (inodeNum - 1) % ext2.inodesGroup;
+    inodeSeekPosition = (inodeNum - 1) % ext2.inodesGroup;
     unsigned int seekPosition;
 
     if (inodeNum == 2) {
         seekPosition = inodeTable * ext2.blockSize + ext2.inodeSize;
     } else {
-        seekPosition = inodeTable * ext2.blockSize + (ext2.inodeSize * position) + address;
+        seekPosition = inodeTable * ext2.blockSize + (ext2.inodeSize * inodeSeekPosition) + address;
     }
 
     // Jump to start of inode i_size table position
