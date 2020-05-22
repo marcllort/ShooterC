@@ -152,10 +152,13 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
     lseek(fd, seekPosition, SEEK_SET);
 
     for (int i = 0; i < 15; i++) {
-        lseek(fd, seekPosition, SEEK_SET);
+        if (inodeNum == 2) {
+            lseek(fd, ((i * 4) + seekPosition), SEEK_SET);
+        } else {
+            lseek(fd, ((i * ext2.blockSize) + seekPosition), SEEK_SET);
+        }
         inodeEntry.i_block[i] = 0;
         read(fd, &inodeEntry.i_block[i], sizeof(uint32_t));
-        seekPosition = seekPosition + 4;
     }
 
     return inodeEntry;
@@ -197,16 +200,14 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
     for (int blockPointer = 0; blockPointer < 12; blockPointer++) {
 
         actualBlockSize = 0;
-        if (inode.i_block[blockPointer] == 0) {
-            return 0;
-        } else {
-            offset = inode.i_block[blockPointer] * ext2.blockSize;
-        }
+        if (inode.i_block[blockPointer] != 0) {
 
-        while (actualBlockSize < ext2.blockSize) {
-            ext2Dir = getInfoEXT2Directory(fd, offset);
-            // Check if name is the same as the one we are looking for
-            if (ext2Dir.inode != 0) {
+            offset = inode.i_block[blockPointer] * ext2.blockSize;
+            int access = 0;
+            while (access < ext2.inodeSize) {
+                ext2Dir = getInfoEXT2Directory(fd, offset);
+
+                //printf("FILE: %s\n", ext2Dir.fileName);
                 if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == FILE_TYPE) {
@@ -228,9 +229,18 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
                         }
                     }
                 }
+
+
+                if (ext2Dir.recordLength == 0) {
+                    offset += 1;
+                    actualBlockSize += 1;
+                    access += ext2Dir.recordLength;
+                } else {
+                    offset += ext2Dir.recordLength;
+                    actualBlockSize += ext2Dir.recordLength;
+                    access += ext2Dir.recordLength;
+                }
             }
-            offset += ext2Dir.recordLength;
-            actualBlockSize += ext2Dir.recordLength;
         }
     }
 
