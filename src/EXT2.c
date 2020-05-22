@@ -236,7 +236,7 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
 
     unsigned long filePosition = 0;
     unsigned long offset = 0;
-    unsigned int blockAddress;
+    unsigned int address;
 
     InodeEntry inodeEntry = getInode(ext2, inodeNumber);
 
@@ -246,19 +246,19 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
     for (int blockPointer = 0; blockPointer < 12; blockPointer++) {
 
         if (inode.i_block[blockPointer] != 0) {
-            blockAddress = inodeEntry.i_block[blockPointer] * ext2.blockSize;
+            address = inodeEntry.i_block[blockPointer] * ext2.blockSize;
 
             while (offset < ext2.inodeSize) {
-                ext2Dir = getInfoEXT2Directory(fd, blockAddress);
+                ext2Dir = getInfoEXT2Directory(fd, address);
 
                 if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
                     if (ext2Dir.fileType == FILE_TYPE) {
                         *fileType = FILE_TYPE;
-                        return blockAddress;
+                        return address;
                     } else if (ext2Dir.fileType == DIR_TYPE) {
                         *fileType = DIR_TYPE;
-                        return blockAddress;
+                        return address;
                     }
                 } else {
                     // If it's a folder, we do a recursive call to look for the file
@@ -273,7 +273,7 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
                     }
                 }
 
-                blockAddress += ext2Dir.recordLength;
+                address += ext2Dir.recordLength;
                 offset += ext2Dir.recordLength;
             }
         }
