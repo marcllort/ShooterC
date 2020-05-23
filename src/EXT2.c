@@ -77,7 +77,7 @@ Ext2Volume getInfoEXT2() {
     read(fd, &ext2.freeBlockCount, sizeof(uint32_t));
     read(fd, &ext2.freeInodesCount, sizeof(uint32_t));
     read(fd, &ext2.firstDataBlock, sizeof(uint32_t));
-    read(fd, &ext2.blockSize, sizeof(uint32_t));
+    read(fd, &ext2.blockSize, sizeof(uint32_t));                // si es 0, quedara a 1024 al seguent step
     ext2.blockSize = 1024 << ext2.blockSize;
 
     // Jump to blocksgroup position
@@ -130,7 +130,7 @@ InodeEntry getInodeData(int fd, Ext2Volume ext2, unsigned int inodeNum) {
     unsigned long groupDescriptor = 0;
 
     if (ext2.firstDataBlock == 0) {
-        groupDescriptor = ext2.blockSize;
+        groupDescriptor = ext2.blockSize;               // Never enters here
     } else {
         groupDescriptor = 2048;
     }
@@ -170,12 +170,12 @@ int findFileEXT2(char *fileName) {
     filename = fileName;
     unsigned char fileType;
     unsigned char rootDir = 1;
-    unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2);
+    unsigned long filePosition = findFileExtVolume(fd, ext2, fileName, &fileType, &rootDir, 2); // Root is always inode number 2
 
     if (fileType == FILE_TYPE) {
-        Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
+        Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);                                  // From the position, get the inode number so we can find the size
         printf("FILE POSITION: %lu -- INODE: %d\n", filePosition, extDir.inode);
-        InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);
+        InodeEntry extInode = getInodeData(fd, ext2, extDir.inode);                                     // Get inode data, size, name...
         printf("File found! Size: %lu bytes\n", extInode.i_size);
     } else if (fileType == DIR_TYPE) {
         printf("Directory found!\n");
@@ -238,18 +238,17 @@ findFileExtVolume(int fd, Ext2Volume ext2, char *fileName, unsigned char *fileTy
     unsigned long offset = 0;
     unsigned int address;
 
-    InodeEntry inodeEntry = getInode(ext2, inodeNumber);
+    InodeEntry inodeEntry = getInode(ext2, inodeNumber);                                                                // Get inode data from its inode number
 
     Ext2Directory ext2Dir;
-    InodeEntry inode = getInodeData(fd, ext2, inodeNumber);
 
-    for (int blockPointer = 0; blockPointer < 12; blockPointer++) {
+    for (int blockPointer = 0; blockPointer < 12; blockPointer++) {                                                     // iter through the 12 direct links
 
-        if (inode.i_block[blockPointer] != 0) {
-            address = inodeEntry.i_block[blockPointer] * ext2.blockSize;
+        if (inodeEntry.i_block[blockPointer] != 0) {                                                                    // if its not empty
+            address = inodeEntry.i_block[blockPointer] * ext2.blockSize;                                                // calculate the address of the block
 
             while (offset < ext2.inodeSize) {
-                ext2Dir = getInfoEXT2Directory(fd, address);
+                ext2Dir = getInfoEXT2Directory(fd, address);                                                            // read the different parts/files of the block
 
                 if (UTILS_compare(ext2Dir.fileName, filename) == 0) {
                     // Return the offset, so we can later find easily the size
@@ -310,7 +309,7 @@ int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
     bzero(newDir.fileName, sizeof(unsigned char));
     lseek(fd, filePosition, SEEK_SET);
 
-    write(fd, &newDir.inode, sizeof(uint32_t));
+    write(fd, &newDir.inode, sizeof(uint32_t));                                                                 // Overwrite the old inode, with one that's empty
     read(fd, &newDir.recordLength, sizeof(uint16_t));
     read(fd, &newDir.nameLength, sizeof(unsigned char));
     read(fd, &newDir.fileType, sizeof(unsigned char));

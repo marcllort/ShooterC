@@ -9,6 +9,7 @@ int isFAT16(int fileDescriptor) {
     lseek(fd, 54, SEEK_SET);
     read(fd, &aux, 8);
 
+    // Compare with offset 54 where says the name of the fileSystem
     if (memcmp(aux, "FAT16", sizeof(char) * 5) == 0) {
         return 1;
     } else if (memcmp(aux, "FAT32", sizeof(char) * 5) == 0) {
@@ -142,7 +143,7 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
         strcat(findFileName, name);
 
         if (nameLength > 0) {
-            if (name[0] == 229) {
+            if (name[0] == 229) {                                                                                       // free entry marker
                 printf("FILE DELETED!\n");
             }
             read(fd, extension, 3);
