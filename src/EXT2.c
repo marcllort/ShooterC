@@ -300,6 +300,55 @@ int deleteFileEXT2(char *fileName, char *fileSystem) {
     return 0;
 }
 
+InodeEntry updateInode(Ext2Volume ext2, unsigned int inodeNum, InodeEntry inodeEntry) {
+    int address = 0;
+    unsigned int inodeTable, inodeSeekPosition;
+
+
+    if (inodeNum != 2) {
+        address = ((inodeNum - 1) / ext2.inodesGroup) * ext2.blocksGroup * ext2.blockSize;
+    }
+
+    lseek(fd, 2048 + address + 8, SEEK_SET);
+    read(fd, &inodeTable, 4);
+
+    inodeSeekPosition = (inodeNum - 1) % ext2.inodesGroup;
+    unsigned int seekPosition;
+
+    if (inodeNum == 2) {
+        seekPosition = inodeTable * ext2.blockSize + ext2.inodeSize;
+    } else {
+        seekPosition = inodeTable * ext2.blockSize + (ext2.inodeSize * inodeSeekPosition) + address;
+    }
+
+    // Jump to start of inode i_size table position
+    seekPosition += 4;
+    lseek(fd, seekPosition, SEEK_SET);
+    write(fd, &inodeEntry.i_links_count, 2);
+
+    // Jump to links count
+    seekPosition += 18;
+    lseek(fd, seekPosition, SEEK_SET);
+    write(fd, &inodeEntry.i_links_count, 2);
+
+    // Jump to start of inode table position
+    seekPosition += 14;
+    lseek(fd, seekPosition, SEEK_SET);
+
+
+    for (int i = 0; i < 15; i++) {
+        if (inodeNum == 2) {
+            lseek(fd, ((i * 4) + seekPosition), SEEK_SET);
+        } else {
+            lseek(fd, ((i * ext2.blockSize) + seekPosition), SEEK_SET);
+        }
+        inodeEntry.i_block[i] = 0;
+        write(fd, &inodeEntry.i_block[i], sizeof(unsigned int));
+    }
+
+    return inodeEntry;
+}
+
 int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
 
     lseek(fd, filePosition, SEEK_SET);
@@ -314,6 +363,17 @@ int deleteFileEXT2Volume(int fd, unsigned long filePosition) {
     read(fd, &newDir.nameLength, sizeof(unsigned char));
     read(fd, &newDir.fileType, sizeof(unsigned char));
     write(fd, &newDir.fileName, newDir.nameLength);
+
+    lseek(fd, filePosition, SEEK_SET);
+    Ext2Volume ext2 = getInfoEXT2();
+    Ext2Directory extDir = getInfoEXT2Directory(fd, filePosition);
+    InodeEntry inode = getInode(ext2, extDir.inode);
+
+    inode.i_size = 0;
+    inode.i_links_count = 0;
+
+    updateInode(ext2, extDir.inode, inode);
+
 
     return 0;
 }
