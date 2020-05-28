@@ -110,6 +110,7 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
     uint32_t fileSize = 0;                       // Found file size
     unsigned char fileAttributes = 0;            // Found file properties (file or directory)
     unsigned long fileSearchPosition = 0;        // Position to start finding
+    uint32_t fat16Entry = 0;
 
     // Root directory position
     unsigned int rootDirectory = ((fat16.reservedSectors * fat16.sectorSize) +
@@ -136,13 +137,19 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
         memset(extension, 0, 4);
         memset(findFileName, 0, 14);
 
+        // Read file entry
+        lseek(fd, fileSearchPosition, SEEK_SET);
+        read(fd, &fat16Entry, sizeof(uint32_t));
+
         // Read file name
+        lseek(fd, fileSearchPosition, SEEK_SET);
         read(fd, name, 8);
         nameLength = fatStrLen(name);
         name[nameLength] = '\0';
         strcat(findFileName, name);
 
-        if (nameLength > 0) {
+        if (fat16Entry != 0x0000 && nameLength > 0) {
+            printf("%s\n", findFileName);
             if (name[0] == 229) {                                                                                       // free entry marker
                 printf("FILE DELETED!\n");
             }
@@ -248,6 +255,8 @@ int deleteFileFAT16Volume(int fdFAT, unsigned long filePosition) {
     for (i = 0; i < 32; i++) {
         write(fdFAT, "", 1);
     }
+    lseek(fdFAT, filePosition, SEEK_SET);
+    write(fdFAT, 0x0000, sizeof(uint32_t));
 
 }
 
