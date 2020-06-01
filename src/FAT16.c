@@ -137,9 +137,6 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
         memset(extension, 0, 4);
         memset(findFileName, 0, 14);
 
-        // Read file entry
-        lseek(fd, fileSearchPosition, SEEK_SET);
-        read(fd, &fat16Entry, sizeof(uint32_t));
 
         // Read file name
         lseek(fd, fileSearchPosition, SEEK_SET);
@@ -148,7 +145,7 @@ findFileFatVolume(int fd, FAT16Volume fat16, char *fileName, unsigned char *file
         name[nameLength] = '\0';
         strcat(findFileName, name);
 
-        if (fat16Entry != 0x0000 && nameLength > 0) {
+        if (nameLength > 0 && name[0] != 229) {
             printf("%s\n", findFileName);
             if (name[0] == 229) {                                                                                       // free entry marker
                 printf("FILE DELETED!\n");
@@ -257,6 +254,14 @@ int deleteFileFAT16Volume(int fdFAT, unsigned long filePosition) {
     }
     lseek(fdFAT, filePosition, SEEK_SET);
     write(fdFAT, 0x0000, sizeof(uint32_t));
+
+    lseek(fdFAT, filePosition, SEEK_SET);
+    lseek(fdFAT, 14, SEEK_CUR); // Set next firstCluster to 0
+    write(fdFAT, 0, sizeof(uint16_t));
+
+    lseek(fdFAT, filePosition, SEEK_SET);
+    lseek(fdFAT, 8, SEEK_CUR); // Set next firstCluster to 0
+    write(fdFAT, 229, 1);
 
 }
 
